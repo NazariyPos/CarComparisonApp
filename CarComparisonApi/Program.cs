@@ -2,6 +2,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Xml;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -17,7 +20,7 @@ builder.Services.AddControllers()
     {
         options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
         options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
-        options.SerializerSettings.Formatting = Formatting.Indented;
+        options.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
         options.SerializerSettings.ContractResolver = new DefaultContractResolver
         {
             NamingStrategy = null

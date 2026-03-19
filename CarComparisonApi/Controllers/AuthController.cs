@@ -1,8 +1,10 @@
+using System;
 using CarComparisonApi.Models.DTOs;
 using CarComparisonApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace CarComparisonApi.Controllers
 {
