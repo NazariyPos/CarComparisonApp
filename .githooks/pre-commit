@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+echo "[pre-commit] Running lint + build checks"
+
+dotnet tool restore
+dotnet restore CarComparisonApi/CarComparisonApi.csproj
+dotnet restore CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
+dotnet roslynator analyze CarComparisonApi/CarComparisonApi.csproj CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
+dotnet build CarComparisonApi/CarComparisonApi.csproj --no-restore
+dotnet build CarComparisonApp.Tests/CarComparisonApp.Tests.csproj --no-restore
+
+echo "[pre-commit] Checks passed"
