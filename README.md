@@ -85,12 +85,37 @@ Roslynator analyzers are connected to both projects and configured via `.editorc
 Run linting:
 ```bash
 dotnet tool restore
-dotnet roslynator analyze CarComparisonApp.sln
+dotnet restore CarComparisonApi/CarComparisonApi.csproj
+dotnet restore CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
+dotnet roslynator analyze CarComparisonApi/CarComparisonApi.csproj CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
 ```
 
-Or run analyzers during build:
+### Git hooks
+Pre-commit hook is available in `.githooks/pre-commit` and runs lint + build checks before commit.
+
+Enable hooks:
 ```bash
-dotnet build
+git config core.hooksPath .githooks
+```
+
+### Integration with the build process
+Linting is integrated into build because:
+- analyzers run during build;
+- `Directory.Build.props` enables `EnforceCodeStyleInBuild`.
+
+Build commands:
+```bash
+dotnet build CarComparisonApi/CarComparisonApi.csproj --no-restore
+dotnet build CarComparisonApp.Tests/CarComparisonApp.Tests.csproj --no-restore
+```
+
+### Full code quality check
+```bash
+./scripts/verify.sh
+```
+PowerShell:
+```powershell
+./scripts/verify.ps1
 ```
 
 Ignored by linting configuration:
@@ -100,6 +125,8 @@ Ignored by linting configuration:
 - `**/*.g.i.cs`
 - `**/*.Designer.cs`
 - `CarComparisonApi/Data/**`
+
+Detailed guide: `linting.md`
 
 ## API Endpoints
 
