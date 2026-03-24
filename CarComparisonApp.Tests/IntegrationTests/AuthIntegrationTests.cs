@@ -1,4 +1,4 @@
-﻿using CarComparisonApi.Controllers;
+using CarComparisonApi.Controllers;
 using CarComparisonApi.Models;
 using CarComparisonApi.Models.DTOs;
 using CarComparisonApi.Services;
@@ -29,7 +29,10 @@ namespace CarComparisonApp.Tests.IntegrationTests
         {
             _originalUsersFilePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", "CarComparisonApi", "Data", "users.json");
 
-            var projectRoot = Directory.GetParent(Path.GetDirectoryName(_originalUsersFilePath))!.FullName;
+            var usersDirectory = Path.GetDirectoryName(_originalUsersFilePath)
+                ?? throw new InvalidOperationException("Cannot determine users file directory.");
+            var projectRoot = Directory.GetParent(usersDirectory)?.FullName
+                ?? throw new InvalidOperationException("Cannot determine project root directory.");
 
             Console.WriteLine($"Project root: {projectRoot}");
             Console.WriteLine($"Original file path: {_originalUsersFilePath}");
@@ -95,7 +98,7 @@ namespace CarComparisonApp.Tests.IntegrationTests
             A.CallTo(() => _environment.ContentRootPath).Returns(projectRoot);
 
             var configurationBuilder = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
+                .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["Jwt:Key"] = "your-super-secret-key-32-chars-long-here!",
                     ["Jwt:Issuer"] = "CarComparisonApi",
@@ -112,7 +115,7 @@ namespace CarComparisonApp.Tests.IntegrationTests
             Console.WriteLine($"Expected file path: {Path.Combine(_environment.ContentRootPath, "Data", "users.json")}");
         }
 
-        private void AddTestUsersIfNotExist(List<User> existingUsers, string filePath)
+        private static void AddTestUsersIfNotExist(List<User> existingUsers, string filePath)
         {
             bool needsUpdate = false;
 
@@ -168,6 +171,10 @@ namespace CarComparisonApp.Tests.IntegrationTests
             catch (IOException ex)
             {
                 Console.WriteLine($"Помилка при відновленні файлу: {ex.Message}");
+            }
+            finally
+            {
+                GC.SuppressFinalize(this);
             }
         }
 

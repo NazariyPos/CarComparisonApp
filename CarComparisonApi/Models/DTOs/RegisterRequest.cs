@@ -6,7 +6,7 @@ namespace CarComparisonApi.Models.DTOs
     {
         [Required]
         [StringLength(20, MinimumLength = 3)]
-        [RegularExpression(@"^[a-zA-Z0-9_]+$",
+        [RegularExpression("^[a-zA-Z0-9_]+$",
             ErrorMessage = "Логін може містити тільки латинські літери, цифри та знак підкреслення")]
         public string Login { get; set; } = string.Empty;
 

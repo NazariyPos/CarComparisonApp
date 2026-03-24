@@ -1,4 +1,6 @@
-﻿namespace CarComparisonApi.Models
+﻿using System;
+
+namespace CarComparisonApi.Models
 {
     public class TestResponse
     {

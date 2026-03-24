@@ -1,4 +1,4 @@
-﻿using CarComparisonApi.Models;
+using CarComparisonApi.Models;
 using CarComparisonApi.Models.DTOs;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -25,7 +25,7 @@ namespace CarComparisonApi.Services
                     "Data",
                     "cars.json");
 
-                _logger.LogInformation($"Шлях до даних: {_dataFilePath}");
+                _logger.LogInformation("Шлях до даних: {DataFilePath}", _dataFilePath);
                 LoadData();
             }
             catch (Exception ex)
@@ -41,24 +41,30 @@ namespace CarComparisonApi.Services
             {
                 try
                 {
-                    _logger.LogInformation($"Завантаження даних з {_dataFilePath}");
+                    _logger.LogInformation("Завантаження даних з {DataFilePath}", _dataFilePath);
 
                     var dataDirectory = Path.GetDirectoryName(_dataFilePath);
+                    if (string.IsNullOrEmpty(dataDirectory))
+                    {
+                        _logger.LogWarning("Не вдалося визначити директорію для шляху {DataFilePath}", _dataFilePath);
+                        return;
+                    }
+
                     if (!Directory.Exists(dataDirectory))
                     {
                         Directory.CreateDirectory(dataDirectory);
-                        _logger.LogInformation($"Створено папку {dataDirectory}");
+                        _logger.LogInformation("Створено папку {DataDirectory}", dataDirectory);
                     }
 
                     if (File.Exists(_dataFilePath))
                     {
                         var json = File.ReadAllText(_dataFilePath);
                         _carData = JsonConvert.DeserializeObject<List<CarBrand>>(json);
-                        _logger.LogInformation($"Завантажено {_carData?.Count ?? 0} марок авто");
+                        _logger.LogInformation("Завантажено {BrandCount} марок авто", _carData?.Count ?? 0);
                     }
                     else
                     {
-                        _logger.LogWarning($"Файл {_dataFilePath} не знайдено.");
+                        _logger.LogWarning("Файл {DataFilePath} не знайдено.", _dataFilePath);
                     }
                 }
                 catch (JsonException jsonEx)
@@ -112,14 +118,14 @@ namespace CarComparisonApi.Services
                                 BodyType = model.BodyType ?? string.Empty,
                                 BrandId = model.BrandId
                             },
-                            Trims = generation.Trims.Select(t => new TrimBasicDto
+                            Trims = generation.Trims.ConvertAll(t => new TrimBasicDto
                             {
                                 Id = t.Id,
                                 Name = t.Name,
                                 TransmissionType = t.TransmissionType ?? string.Empty,
                                 DoorsCount = t.DoorsCount,
                                 SeatsCount = t.SeatsCount
-                            }).ToList()
+                            })
                         };
 
                         return Task.FromResult<GenerationWithTrimsDto?>(result);
@@ -209,7 +215,7 @@ namespace CarComparisonApi.Services
                     }
 
                     if (!string.IsNullOrEmpty(bodyType) &&
-                        !modelItem.BodyType.Contains(bodyType, StringComparison.OrdinalIgnoreCase))
+                        !string.Equals(modelItem.BodyType, bodyType, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
@@ -244,13 +250,12 @@ namespace CarComparisonApi.Services
                         if (!string.IsNullOrEmpty(fuelType))
                         {
                             filteredTrims = filteredTrims.Where(t =>
-                                t.TechnicalDetails != null &&
-                                t.TechnicalDetails.FuelType != null &&
+                                t.TechnicalDetails?.FuelType != null &&
                                 string.Equals(t.TechnicalDetails.FuelType, fuelType, StringComparison.OrdinalIgnoreCase));
                         }
 
                         var trimsList = filteredTrims.ToList();
-                        if (!trimsList.Any())
+                        if (trimsList.Count == 0)
                             continue;
 
                         var card = new GenerationCardDto
@@ -261,12 +266,11 @@ namespace CarComparisonApi.Services
                             ModelName = modelItem.Name,
                             GenerationId = genItem.Id,
                             GenerationName = genItem.Name,
-                            BodyType = modelItem.BodyType,
+                            BodyType = modelItem.BodyType ?? string.Empty,
                             YearFrom = genItem.YearFrom,
                             YearTo = genItem.YearTo,
                             PhotoUrl = genItem.PhotoUrl,
                             TrimCount = trimsList.Count,
-                            
                         };
 
                         generationCards.Add(card);
@@ -275,7 +279,7 @@ namespace CarComparisonApi.Services
             }
 
             Console.WriteLine($"Total generation cards found: {generationCards.Count}");
-            Console.WriteLine($"=== End GetGenerationCardsAsync ===");
+            Console.WriteLine("=== End GetGenerationCardsAsync ===");
 
             return Task.FromResult(generationCards.AsEnumerable());
         }
@@ -380,7 +384,7 @@ namespace CarComparisonApi.Services
                     }
 
                     if (!string.IsNullOrEmpty(bodyType) &&
-                        !modelItem.BodyType.Contains(bodyType, StringComparison.OrdinalIgnoreCase))
+                        !string.Equals(modelItem.BodyType, bodyType, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
@@ -405,20 +409,18 @@ namespace CarComparisonApi.Services
                         if (!string.IsNullOrEmpty(transmission))
                         {
                             filteredTrims = filteredTrims.Where(t =>
-                                t.TransmissionType != null &&
-                                t.TransmissionType.Contains(transmission, StringComparison.OrdinalIgnoreCase));
+                                t.TransmissionType?.Contains(transmission, StringComparison.OrdinalIgnoreCase) == true);
                         }
 
                         if (!string.IsNullOrEmpty(fuelType))
                         {
                             filteredTrims = filteredTrims.Where(t =>
                                 t.TechnicalDetails != null &&
-                                t.TechnicalDetails.FuelType != null &&
-                                t.TechnicalDetails.FuelType.Contains(fuelType, StringComparison.OrdinalIgnoreCase));
+                                t.TechnicalDetails.FuelType?.Contains(fuelType, StringComparison.OrdinalIgnoreCase) == true);
                         }
 
                         var trimsList = filteredTrims.ToList();
-                        if (!trimsList.Any())
+                        if (trimsList.Count == 0)
                             continue;
 
                         var simplifiedGeneration = new Generation
@@ -429,7 +431,7 @@ namespace CarComparisonApi.Services
                             YearFrom = genItem.YearFrom,
                             YearTo = genItem.YearTo,
                             PhotoUrl = genItem.PhotoUrl,
-                            Trims = trimsList.Select(t => new Trim
+                            Trims = trimsList.ConvertAll(t => new Trim
                             {
                                 Id = t.Id,
                                 Name = t.Name,
@@ -439,13 +441,13 @@ namespace CarComparisonApi.Services
                                 SeatsCount = t.SeatsCount,
                                 TechnicalDetails = null,
                                 Reviews = new List<Review>()
-                            }).ToList()
+                            })
                         };
 
                         filteredGenerations.Add(simplifiedGeneration);
                     }
 
-                    if (!filteredGenerations.Any())
+                    if (filteredGenerations.Count == 0)
                         continue;
 
                     var simplifiedModel = new CarModel
@@ -460,7 +462,7 @@ namespace CarComparisonApi.Services
                     filteredModels.Add(simplifiedModel);
                 }
 
-                if (!filteredModels.Any())
+                if (filteredModels.Count == 0)
                     continue;
 
                 var simplifiedBrand = new CarBrand

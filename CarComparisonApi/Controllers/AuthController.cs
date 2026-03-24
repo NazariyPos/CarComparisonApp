@@ -10,7 +10,7 @@ namespace CarComparisonApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public partial class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
 
@@ -27,13 +27,13 @@ namespace CarComparisonApi.Controllers
                 if (request.Login.Length > 20)
                     return BadRequest(new { success = false, message = "Логін має бути не більше 20 символів" });
 
-                if (!System.Text.RegularExpressions.Regex.IsMatch(request.Login, @"^[a-zA-Z0-9_]+$"))
+                if (!MyRegex().IsMatch(request.Login))
                     return BadRequest(new { success = false, message = "Логін має містити тільки латинські літери, цифри та знак підкреслення" });
 
                 if (request.Password.Length < 8)
                     return BadRequest(new { success = false, message = "Пароль має бути не менше 8 символів" });
 
-                if (!System.Text.RegularExpressions.Regex.IsMatch(request.Password, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$"))
+                if (!MyRegex1().IsMatch(request.Password))
                     return BadRequest(new { success = false, message = "Пароль має містити принаймні одну велику літеру, одну малу літеру та одну цифру" });
 
                 var response = await _authService.RegisterAsync(request);
@@ -64,7 +64,7 @@ namespace CarComparisonApi.Controllers
         {
             try
             {
-                Console.WriteLine($"=== GetCurrentUser called ===");
+                Console.WriteLine("=== GetCurrentUser called ===");
                 Console.WriteLine($"User.Identity.IsAuthenticated: {User.Identity?.IsAuthenticated}");
                 Console.WriteLine($"User.Identity.Name: {User.Identity?.Name}");
 
@@ -120,5 +120,10 @@ namespace CarComparisonApi.Controllers
 
             return null;
         }
+
+        [System.Text.RegularExpressions.GeneratedRegex("^[a-zA-Z0-9_]+$")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex();
+        [System.Text.RegularExpressions.GeneratedRegex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex1();
     }
 }

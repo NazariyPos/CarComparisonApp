@@ -1,4 +1,5 @@
-﻿using CarComparisonApi.Models;
+﻿using System;
+using CarComparisonApi.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CarComparisonApi.Controllers

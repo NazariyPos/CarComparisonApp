@@ -9,7 +9,7 @@ namespace CarComparisonApi.Services
         private readonly ICarService _carService;
         private readonly IAuthService _authService;
         private readonly string _reviewsFilePath;
-        private List<Review> _reviews;
+        private List<Review> _reviews = new();
         private readonly object _lock = new();
 
         public ReviewService(IWebHostEnvironment environment, ICarService carService, IAuthService authService)
@@ -32,15 +32,14 @@ namespace CarComparisonApi.Services
                 }
                 else
                 {
-                    _reviews = new List<Review>();
-                    var sampleReviews = new List<Review>
+                    _reviews = new List<Review>
                     {
                         new Review
                         {
                             Id = 1,
                             UserId = 1,
                             TrimId = 1,
-                            Content = "Чудовий автомобіль, дуже задоволений покупкою! Комфорт на високому рівні.",
+                            Content = "Р§СѓРґРѕРІРёР№ Р°РІС‚РѕРјРѕР±С–Р»СЊ, РґСѓР¶Рµ Р·Р°РґРѕРІРѕР»РµРЅРёР№ РїРѕРєСѓРїРєРѕСЋ! РљРѕРјС„РѕСЂС‚ РЅР° РІРёСЃРѕРєРѕРјСѓ СЂС–РІРЅС–.",
                             Rating = 9,
                             CreatedAt = DateTime.UtcNow.AddDays(-30)
                         },
@@ -49,7 +48,7 @@ namespace CarComparisonApi.Services
                             Id = 2,
                             UserId = 1,
                             TrimId = 2,
-                            Content = "Потужний двигун, але велика витрата палива в місті.",
+                            Content = "РџРѕС‚СѓР¶РЅРёР№ РґРІРёРіСѓРЅ, Р°Р»Рµ РІРµР»РёРєР° РІРёС‚СЂР°С‚Р° РїР°Р»РёРІР° РІ РјС–СЃС‚С–.",
                             Rating = 7,
                             CreatedAt = DateTime.UtcNow.AddDays(-15)
                         },
@@ -58,12 +57,11 @@ namespace CarComparisonApi.Services
                             Id = 3,
                             UserId = 1,
                             TrimId = 3,
-                            Content = "Надійний кросовер, ідеально підходить для сім'ї.",
+                            Content = "РќР°РґС–Р№РЅРёР№ РєСЂРѕСЃРѕРІРµСЂ, С–РґРµР°Р»СЊРЅРѕ РїС–РґС…РѕРґРёС‚СЊ РґР»СЏ СЃС–Рј'С—.",
                             Rating = 8,
                             CreatedAt = DateTime.UtcNow.AddDays(-10)
                         }
                     };
-                    _reviews.AddRange(sampleReviews);
                     SaveReviews();
                 }
             }
@@ -75,38 +73,38 @@ namespace CarComparisonApi.Services
             File.WriteAllText(_reviewsFilePath, json);
         }
 
-        public async Task<IEnumerable<Review>> GetReviewsByTrimIdAsync(int trimId)
+        public Task<IEnumerable<Review>> GetReviewsByTrimIdAsync(int trimId)
         {
             lock (_lock)
             {
-                return _reviews.Where(r => r.TrimId == trimId).ToList();
+                return Task.FromResult<IEnumerable<Review>>(_reviews.Where(r => r.TrimId == trimId).ToList());
             }
         }
 
-        public async Task<Review?> GetReviewByIdAsync(int id)
+        public Task<Review?> GetReviewByIdAsync(int id)
         {
             lock (_lock)
             {
-                return _reviews.FirstOrDefault(r => r.Id == id);
+                return Task.FromResult(_reviews.FirstOrDefault(r => r.Id == id));
             }
         }
 
-        public async Task<Review> CreateReviewAsync(Review review)
+        public Task<Review> CreateReviewAsync(Review review)
         {
             lock (_lock)
             {
                 if (review.Rating < 1 || review.Rating > 10)
-                    throw new ArgumentException("Рейтинг має бути в діапазоні від 1 до 10");
+                    throw new ArgumentException("Р РµР№С‚РёРЅРі РјР°С” Р±СѓС‚Рё РІ РґС–Р°РїР°Р·РѕРЅС– РІС–Рґ 1 РґРѕ 10");
 
                 review.Id = _reviews.Count > 0 ? _reviews.Max(r => r.Id) + 1 : 1;
                 review.CreatedAt = DateTime.UtcNow;
                 _reviews.Add(review);
                 SaveReviews();
-                return review;
+                return Task.FromResult(review);
             }
         }
 
-        public async Task UpdateReviewAsync(int id, Review review)
+        public Task UpdateReviewAsync(int id, Review review)
         {
             lock (_lock)
             {
@@ -114,7 +112,7 @@ namespace CarComparisonApi.Services
                 if (existingReview != null)
                 {
                     if (review.Rating < 1 || review.Rating > 10)
-                        throw new ArgumentException("Рейтинг має бути в діапазоні від 1 до 10");
+                        throw new ArgumentException("Р РµР№С‚РёРЅРі РјР°С” Р±СѓС‚Рё РІ РґС–Р°РїР°Р·РѕРЅС– РІС–Рґ 1 РґРѕ 10");
 
                     existingReview.Content = review.Content;
                     existingReview.Rating = review.Rating;
@@ -122,9 +120,11 @@ namespace CarComparisonApi.Services
                     SaveReviews();
                 }
             }
+
+            return Task.CompletedTask;
         }
 
-        public async Task DeleteReviewAsync(int id)
+        public Task DeleteReviewAsync(int id)
         {
             lock (_lock)
             {
@@ -135,13 +135,15 @@ namespace CarComparisonApi.Services
                     SaveReviews();
                 }
             }
+
+            return Task.CompletedTask;
         }
 
-        public async Task<IEnumerable<Review>> GetReviewsByUserIdAsync(int userId)
+        public Task<IEnumerable<Review>> GetReviewsByUserIdAsync(int userId)
         {
             lock (_lock)
             {
-                return _reviews.Where(r => r.UserId == userId).ToList();
+                return Task.FromResult<IEnumerable<Review>>(_reviews.Where(r => r.UserId == userId).ToList());
             }
         }
 
@@ -169,7 +171,7 @@ namespace CarComparisonApi.Services
                                 result.Add(new
                                 {
                                     Review = review,
-                                    Username = user?.Username ?? "Невідомий",
+                                    Username = user?.Username ?? "РќРµРІС–РґРѕРјРёР№",
                                     Model = model.Name,
                                     Generation = generation.Name,
                                     Trim = trim.Name,

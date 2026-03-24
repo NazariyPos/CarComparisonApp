@@ -46,10 +46,10 @@ namespace CarComparisonApp.Tests.Controller
             Assert.NotNull(errorsProperty);
 
             var message = messageProperty.GetValue(response) as string;
-            var errors = errorsProperty.GetValue(response) as IEnumerable<string>;
+            var errors = Assert.IsAssignableFrom<IEnumerable<string>>(errorsProperty.GetValue(response));
 
-            Assert.Equal("Помилки валідації параметрів пошуку", message);
-            Assert.Contains("Для пошуку за моделлю необхідно вказати марку (параметр brand)", errors);
+            Assert.Equal("пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ", message);
+            Assert.Contains("пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ brand)", errors);
         }
 
         [Fact]
@@ -72,9 +72,10 @@ namespace CarComparisonApp.Tests.Controller
             Assert.NotNull(response);
 
             var errorsProperty = response.GetType().GetProperty("errors");
-            var errors = errorsProperty.GetValue(response) as IEnumerable<string>;
+            Assert.NotNull(errorsProperty);
+            var errors = Assert.IsAssignableFrom<IEnumerable<string>>(errorsProperty.GetValue(response));
 
-            Assert.Contains("Для пошуку за поколінням необхідно вказати марку (параметр brand)", errors);
+            Assert.Contains("пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ brand)", errors);
         }
 
         [Fact]
@@ -97,9 +98,10 @@ namespace CarComparisonApp.Tests.Controller
             Assert.NotNull(response);
 
             var errorsProperty = response.GetType().GetProperty("errors");
-            var errors = errorsProperty.GetValue(response) as IEnumerable<string>;
+            Assert.NotNull(errorsProperty);
+            var errors = Assert.IsAssignableFrom<IEnumerable<string>>(errorsProperty.GetValue(response));
 
-            Assert.Contains("Для пошуку за поколінням необхідно вказати модель (параметр model)", errors);
+            Assert.Contains("пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ model)", errors);
         }
 
         [Fact]
@@ -122,9 +124,10 @@ namespace CarComparisonApp.Tests.Controller
             Assert.NotNull(response);
 
             var errorsProperty = response.GetType().GetProperty("errors");
-            var errors = errorsProperty.GetValue(response) as IEnumerable<string>;
+            Assert.NotNull(errorsProperty);
+            var errors = Assert.IsAssignableFrom<IEnumerable<string>>(errorsProperty.GetValue(response));
 
-            Assert.Contains("Мінімальний рік не може бути більшим за максимальний", errors);
+            Assert.Contains("МіпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ", errors);
         }
 
         [Fact]
@@ -147,9 +150,10 @@ namespace CarComparisonApp.Tests.Controller
             Assert.NotNull(response);
 
             var errorsProperty = response.GetType().GetProperty("errors");
-            var errors = errorsProperty.GetValue(response) as IEnumerable<string>;
+            Assert.NotNull(errorsProperty);
+            var errors = Assert.IsAssignableFrom<IEnumerable<string>>(errorsProperty.GetValue(response));
 
-            Assert.Contains("Мінімальний рік не може бути меншим за 1900", errors);
+            Assert.Contains("МіпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ 1900", errors);
         }
 
         [Fact]
@@ -172,17 +176,18 @@ namespace CarComparisonApp.Tests.Controller
             Assert.NotNull(response);
 
             var errorsProperty = response.GetType().GetProperty("errors");
-            var errors = errorsProperty.GetValue(response) as IEnumerable<string>;
+            Assert.NotNull(errorsProperty);
+            var errors = Assert.IsAssignableFrom<IEnumerable<string>>(errorsProperty.GetValue(response));
 
-            Assert.Contains($"Максимальний рік не може бути більшим за {DateTime.Now.Year + 1}", errors);
+            Assert.Contains($"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ {DateTime.Now.Year + 1}", errors);
         }
 
         [Fact]
         public async Task Search_ValidParameters_ServiceReturnsEmpty_ReturnsNotFound()
         {
             // Arrange
-            string brand = "Toyota";
-            string model = "Camry";
+            const string brand = "Toyota";
+            const string model = "Camry";
 
             var emptyResult = Enumerable.Empty<GenerationCardDto>();
             A.CallTo(() => _mockCarService.GetGenerationCardsAsync(
@@ -213,8 +218,9 @@ namespace CarComparisonApp.Tests.Controller
 
             var message = messageProperty.GetValue(response) as string;
             var parameters = parametersProperty.GetValue(response);
+            Assert.NotNull(parameters);
 
-            Assert.Equal("За вашими критеріями не знайдено жодного покоління авто", message);
+            Assert.Equal("пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ", message);
 
             var brandParamProperty = parameters.GetType().GetProperty("brand");
             var modelParamProperty = parameters.GetType().GetProperty("model");
@@ -233,8 +239,8 @@ namespace CarComparisonApp.Tests.Controller
         public async Task Search_ValidParameters_ServiceReturnsData_ReturnsOkWithData()
         {
             // Arrange
-            string brand = "Toyota";
-            string model = "Camry";
+            const string brand = "Toyota";
+            const string model = "Camry";
 
             var expectedData = new List<GenerationCardDto>
             {
@@ -288,7 +294,7 @@ namespace CarComparisonApp.Tests.Controller
         public async Task Search_ServiceThrowsException_ReturnsInternalServerError()
         {
             // Arrange
-            string brand = "Toyota";
+            const string brand = "Toyota";
 
             A.CallTo(() => _mockCarService.GetGenerationCardsAsync(
                 brand, null, null, null, null, null, null, null))
@@ -321,7 +327,7 @@ namespace CarComparisonApp.Tests.Controller
             var message = messageProperty.GetValue(response) as string;
             var error = errorProperty.GetValue(response) as string;
 
-            Assert.Equal("Сталася внутрішня помилка під час пошуку", message);
+            Assert.Equal("РЎС‚Р°Р»Р°СЃСЏ РІРЅСѓС‚СЂС–С€РЅСЏ РїРѕРјРёР»РєР° РїС–Рґ С‡Р°СЃ РїРѕС€СѓРєСѓ", message);
             Assert.Equal("Database connection failed", error);
         }
 
@@ -329,14 +335,14 @@ namespace CarComparisonApp.Tests.Controller
         public async Task Search_AllFiltersApplied_ServiceCalledWithCorrectParameters()
         {
             // Arrange
-            string brand = "Toyota";
-            string model = "Camry";
-            string generation = "XV70";
-            int minYear = 2015;
-            int maxYear = 2020;
-            string bodyType = "Седан";
-            string transmission = "Автомат";
-            string fuelType = "Бензин";
+            const string brand = "Toyota";
+            const string model = "Camry";
+            const string generation = "XV70";
+            const int minYear = 2015;
+            const int maxYear = 2020;
+            const string bodyType = "РЎРµРґР°РЅ";
+            const string transmission = "РђРІС‚РѕРјР°С‚";
+            const string fuelType = "Р‘РµРЅР·РёРЅ";
 
             var expectedData = new List<GenerationCardDto>
             {

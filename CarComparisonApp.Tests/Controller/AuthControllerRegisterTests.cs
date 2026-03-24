@@ -1,4 +1,4 @@
-﻿using CarComparisonApi.Controllers;
+using CarComparisonApi.Controllers;
 using CarComparisonApi.Models.DTOs;
 using CarComparisonApi.Services;
 using FakeItEasy;
@@ -85,8 +85,8 @@ namespace CarComparisonApp.Tests.Controller
 
             var successProperty = responseType.GetProperty("success");
             Assert.NotNull(successProperty);
-            var successValue = successProperty.GetValue(response);
-            Assert.False((bool)successValue);
+            var successValue = Assert.IsType<bool>(successProperty.GetValue(response));
+            Assert.False(successValue);
 
             var messageProperty = responseType.GetProperty("message");
             Assert.NotNull(messageProperty);
@@ -119,8 +119,8 @@ namespace CarComparisonApp.Tests.Controller
 
             var successProperty = responseType.GetProperty("success");
             Assert.NotNull(successProperty);
-            var successValue = successProperty.GetValue(response);
-            Assert.False((bool)successValue);
+            var successValue = Assert.IsType<bool>(successProperty.GetValue(response));
+            Assert.False(successValue);
 
             var messageProperty = responseType.GetProperty("message");
             Assert.NotNull(messageProperty);
@@ -150,8 +150,8 @@ namespace CarComparisonApp.Tests.Controller
 
             var successProperty = responseType.GetProperty("success");
             Assert.NotNull(successProperty);
-            var successValue = successProperty.GetValue(response);
-            Assert.False((bool)successValue);
+            var successValue = Assert.IsType<bool>(successProperty.GetValue(response));
+            Assert.False(successValue);
 
             var messageProperty = responseType.GetProperty("message");
             Assert.NotNull(messageProperty);
@@ -181,8 +181,8 @@ namespace CarComparisonApp.Tests.Controller
 
             var successProperty = responseType.GetProperty("success");
             Assert.NotNull(successProperty);
-            var successValue = successProperty.GetValue(response);
-            Assert.False((bool)successValue);
+            var successValue = Assert.IsType<bool>(successProperty.GetValue(response));
+            Assert.False(successValue);
 
             var messageProperty = responseType.GetProperty("message");
             Assert.NotNull(messageProperty);
@@ -212,8 +212,8 @@ namespace CarComparisonApp.Tests.Controller
 
             var successProperty = responseType.GetProperty("success");
             Assert.NotNull(successProperty);
-            var successValue = successProperty.GetValue(response);
-            Assert.False((bool)successValue);
+            var successValue = Assert.IsType<bool>(successProperty.GetValue(response));
+            Assert.False(successValue);
 
             var messageProperty = responseType.GetProperty("message");
             Assert.NotNull(messageProperty);
@@ -243,8 +243,8 @@ namespace CarComparisonApp.Tests.Controller
 
             var successProperty = responseType.GetProperty("success");
             Assert.NotNull(successProperty);
-            var successValue = successProperty.GetValue(response);
-            Assert.False((bool)successValue);
+            var successValue = Assert.IsType<bool>(successProperty.GetValue(response));
+            Assert.False(successValue);
 
             var messageProperty = responseType.GetProperty("message");
             Assert.NotNull(messageProperty);
@@ -263,7 +263,7 @@ namespace CarComparisonApp.Tests.Controller
                 Email = "test@example.com"
             };
 
-            var exceptionMessage = "Користувач з таким логіном або email вже існує";
+            const string exceptionMessage = "Користувач з таким логіном або email вже існує";
             A.CallTo(() => _mockAuthService.RegisterAsync(validRequest))
                 .ThrowsAsync(new Exception(exceptionMessage));
 
@@ -279,8 +279,8 @@ namespace CarComparisonApp.Tests.Controller
 
             var successProperty = responseType.GetProperty("success");
             Assert.NotNull(successProperty);
-            var successValue = successProperty.GetValue(response);
-            Assert.False((bool)successValue);
+            var successValue = Assert.IsType<bool>(successProperty.GetValue(response));
+            Assert.False(successValue);
 
             var messageProperty = responseType.GetProperty("message");
             Assert.NotNull(messageProperty);

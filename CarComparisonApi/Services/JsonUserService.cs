@@ -21,7 +21,7 @@ namespace CarComparisonApi.Services
     {
         private readonly IWebHostEnvironment _environment;
         private readonly string _usersFilePath;
-        private List<User> _users;
+        private List<User> _users = new();
         private readonly object _lock = new();
 
         public JsonUserService(IWebHostEnvironment environment)

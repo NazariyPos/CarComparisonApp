@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using CarComparisonApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,13 +22,12 @@ namespace CarComparisonApi.Controllers
         public async Task<IActionResult> Compare([FromQuery] string trimIds)
         {
             var ids = trimIds.Split(',')
-                .Select(id => int.TryParse(id, out var num) ? num : (int?)null)
-                .Where(id => id.HasValue)
-                .Select(id => id.Value)
+                .Select(id => int.TryParse(id, out var num) ? num : -1)
+                .Where(id => id > 0)
                 .ToList();
 
             if (ids.Count == 0 || ids.Count > 4)
-                return BadRequest("Можна порівнювати від 1 до 4 комплектацій");
+                return BadRequest("пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ 1 пїЅпїЅ 4 пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
 
             var trims = await _carService.GetTrimsForComparisonAsync(ids);
 
@@ -37,33 +40,33 @@ namespace CarComparisonApi.Controllers
             return Ok(comparisonResult);
         }
 
-        private Dictionary<string, List<int>> GetHighlights(IEnumerable<CarComparisonApi.Models.Trim> trims)
+        private static Dictionary<string, List<int>> GetHighlights(IEnumerable<CarComparisonApi.Models.Trim> trims)
         {
             var highlights = new Dictionary<string, List<int>>();
             var trimList = trims.ToList();
 
             if (trimList.All(t => t.TechnicalDetails != null))
             {
-                var maxSpeeds = trimList.Select(t => t.TechnicalDetails!.MaxSpeed ?? 0).ToList();
+                var maxSpeeds = trimList.ConvertAll(t => t.TechnicalDetails!.MaxSpeed ?? 0);
                 HighlightParameter("MaxSpeed", maxSpeeds, true, highlights);
 
-                var accelerations = trimList.Select(t => t.TechnicalDetails!.Acceleration0To100 ?? decimal.MaxValue).ToList();
+                var accelerations = trimList.ConvertAll(t => t.TechnicalDetails!.Acceleration0To100 ?? decimal.MaxValue);
                 HighlightParameter("Acceleration0To100", accelerations, false, highlights);
 
-                var powers = trimList.Select(t => t.TechnicalDetails!.Power ?? 0).ToList();
+                var powers = trimList.ConvertAll(t => t.TechnicalDetails!.Power ?? 0);
                 HighlightParameter("Power", powers, true, highlights);
 
-                var torques = trimList.Select(t => t.TechnicalDetails!.Torque ?? 0).ToList();
+                var torques = trimList.ConvertAll(t => t.TechnicalDetails!.Torque ?? 0);
                 HighlightParameter("Torque", torques, true, highlights);
 
-                var fuelConsumptions = trimList.Select(t => t.TechnicalDetails!.FuelConsumptionMixed ?? decimal.MaxValue).ToList();
+                var fuelConsumptions = trimList.ConvertAll(t => t.TechnicalDetails!.FuelConsumptionMixed ?? decimal.MaxValue);
                 HighlightParameter("FuelConsumption", fuelConsumptions, false, highlights);
             }
 
             return highlights;
         }
 
-        private void HighlightParameter<T>(string parameterName, List<T> values, bool higherIsBetter,
+        private static void HighlightParameter<T>(string parameterName, List<T> values, bool higherIsBetter,
             Dictionary<string, List<int>> highlights) where T : IComparable
         {
             if (values.Count == 0) return;

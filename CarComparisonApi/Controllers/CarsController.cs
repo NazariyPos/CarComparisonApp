@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using CarComparisonApi.Models.DTOs;
 using CarComparisonApi.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -30,41 +34,41 @@ namespace CarComparisonApi.Controllers
 
             if (!string.IsNullOrEmpty(model) && string.IsNullOrEmpty(brand))
             {
-                validationErrors.Add("Для пошуку за моделлю необхідно вказати марку (параметр brand)");
+                validationErrors.Add("Р”Р»СЏ РїРѕС€СѓРєСѓ Р·Р° РјРѕРґРµР»Р»СЋ РЅРµРѕР±С…С–РґРЅРѕ РІРєР°Р·Р°С‚Рё РјР°СЂРєСѓ (РїР°СЂР°РјРµС‚СЂ brand)");
             }
 
             if (!string.IsNullOrEmpty(generation))
             {
                 if (string.IsNullOrEmpty(brand))
                 {
-                    validationErrors.Add("Для пошуку за поколінням необхідно вказати марку (параметр brand)");
+                    validationErrors.Add("Р”Р»СЏ РїРѕС€СѓРєСѓ Р·Р° РїРѕРєРѕР»С–РЅРЅСЏРј РЅРµРѕР±С…С–РґРЅРѕ РІРєР°Р·Р°С‚Рё РјР°СЂРєСѓ (РїР°СЂР°РјРµС‚СЂ brand)");
                 }
                 if (string.IsNullOrEmpty(model))
                 {
-                    validationErrors.Add("Для пошуку за поколінням необхідно вказати модель (параметр model)");
+                    validationErrors.Add("Р”Р»СЏ РїРѕС€СѓРєСѓ Р·Р° РїРѕРєРѕР»С–РЅРЅСЏРј РЅРµРѕР±С…С–РґРЅРѕ РІРєР°Р·Р°С‚Рё РјРѕРґРµР»СЊ (РїР°СЂР°РјРµС‚СЂ model)");
                 }
             }
 
             if (minYear.HasValue && maxYear.HasValue && minYear > maxYear)
             {
-                validationErrors.Add("Мінімальний рік не може бути більшим за максимальний");
+                validationErrors.Add("РњС–РЅС–РјР°Р»СЊРЅРёР№ СЂС–Рє РЅРµ РјРѕР¶Рµ Р±СѓС‚Рё Р±С–Р»СЊС€РёРј Р·Р° РјР°РєСЃРёРјР°Р»СЊРЅРёР№");
             }
 
             if (minYear.HasValue && minYear < 1900)
             {
-                validationErrors.Add("Мінімальний рік не може бути меншим за 1900");
+                validationErrors.Add("РњС–РЅС–РјР°Р»СЊРЅРёР№ СЂС–Рє РЅРµ РјРѕР¶Рµ Р±СѓС‚Рё РјРµРЅС€РёРј Р·Р° 1900");
             }
 
             if (maxYear.HasValue && maxYear > DateTime.Now.Year + 1)
             {
-                validationErrors.Add($"Максимальний рік не може бути більшим за {DateTime.Now.Year + 1}");
+                validationErrors.Add($"РњР°РєСЃРёРјР°Р»СЊРЅРёР№ СЂС–Рє РЅРµ РјРѕР¶Рµ Р±СѓС‚Рё Р±С–Р»СЊС€РёРј Р·Р° {DateTime.Now.Year + 1}");
             }
 
-            if (validationErrors.Any())
+            if (validationErrors.Count != 0)
             {
                 return BadRequest(new
                 {
-                    message = "Помилки валідації параметрів пошуку",
+                    message = "РџРѕРјРёР»РєРё РІР°Р»С–РґР°С†С–С— РїР°СЂР°РјРµС‚СЂС–РІ РїРѕС€СѓРєСѓ",
                     errors = validationErrors
                 });
             }
@@ -79,7 +83,7 @@ namespace CarComparisonApi.Controllers
                 {
                     return NotFound(new
                     {
-                        message = "За вашими критеріями не знайдено жодного покоління авто",
+                        message = "Р—Р° РІР°С€РёРјРё РєСЂРёС‚РµСЂС–СЏРјРё РЅРµ Р·РЅР°Р№РґРµРЅРѕ Р¶РѕРґРЅРѕРіРѕ РїРѕРєРѕР»С–РЅРЅСЏ Р°РІС‚Рѕ",
                         parameters = new
                         {
                             brand,
@@ -100,7 +104,7 @@ namespace CarComparisonApi.Controllers
             {
                 return StatusCode(500, new
                 {
-                    message = "Сталася внутрішня помилка під час пошуку",
+                    message = "РЎС‚Р°Р»Р°СЃСЏ РІРЅСѓС‚СЂС–С€РЅСЏ РїРѕРјРёР»РєР° РїС–Рґ С‡Р°СЃ РїРѕС€СѓРєСѓ",
                     error = ex.Message
                 });
             }
@@ -125,12 +129,12 @@ namespace CarComparisonApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest("ID має бути додатним числом");
+                return BadRequest("ID РјР°С” Р±СѓС‚Рё РґРѕРґР°С‚РЅРёРј С‡РёСЃР»РѕРј");
             }
 
             var brand = await _carService.GetBrandByIdAsync(id);
             if (brand == null)
-                return NotFound($"Марка з ID {id} не знайдена");
+                return NotFound($"РњР°СЂРєР° Р· ID {id} РЅРµ Р·РЅР°Р№РґРµРЅР°");
 
             return Ok(brand);
         }
@@ -140,13 +144,13 @@ namespace CarComparisonApi.Controllers
         {
             if (brandId <= 0)
             {
-                return BadRequest("ID марки має бути додатним числом");
+                return BadRequest("ID РјР°СЂРєРё РјР°С” Р±СѓС‚Рё РґРѕРґР°С‚РЅРёРј С‡РёСЃР»РѕРј");
             }
 
             var brandExists = await _carService.GetBrandByIdAsync(brandId);
             if (brandExists == null)
             {
-                return NotFound($"Марка з ID {brandId} не знайдена");
+                return NotFound($"РњР°СЂРєР° Р· ID {brandId} РЅРµ Р·РЅР°Р№РґРµРЅР°");
             }
 
             var models = await _carService.GetModelsByBrandIdAsync(brandId);
@@ -155,7 +159,7 @@ namespace CarComparisonApi.Controllers
             {
                 Id = m.Id,
                 Name = m.Name,
-                BodyType = m.BodyType,
+                BodyType = m.BodyType ?? string.Empty,
                 BrandId = m.BrandId
             }).ToList();
 
@@ -167,12 +171,12 @@ namespace CarComparisonApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest("ID має бути додатним числом");
+                return BadRequest("ID РјР°С” Р±СѓС‚Рё РґРѕРґР°С‚РЅРёРј С‡РёСЃР»РѕРј");
             }
 
             var model = await _carService.GetModelByIdAsync(id);
             if (model == null)
-                return NotFound($"Модель з ID {id} не знайдена");
+                return NotFound($"РњРѕРґРµР»СЊ Р· ID {id} РЅРµ Р·РЅР°Р№РґРµРЅР°");
 
             return Ok(model);
         }
@@ -182,20 +186,20 @@ namespace CarComparisonApi.Controllers
         {
             if (modelId <= 0)
             {
-                return BadRequest("ID моделі має бути додатним числом");
+                return BadRequest("ID РјРѕРґРµР»С– РјР°С” Р±СѓС‚Рё РґРѕРґР°С‚РЅРёРј С‡РёСЃР»РѕРј");
             }
 
             var modelExists = await _carService.GetModelByIdAsync(modelId);
             if (modelExists == null)
             {
-                return NotFound($"Модель з ID {modelId} не знайдена");
+                return NotFound($"РњРѕРґРµР»СЊ Р· ID {modelId} РЅРµ Р·РЅР°Р№РґРµРЅР°");
             }
 
             var generations = await _carService.GetGenerationsByModelIdAsync(modelId);
 
             if (!generations.Any())
             {
-                return NotFound($"Для моделі з ID {modelId} не знайдено поколінь");
+                return NotFound($"Р”Р»СЏ РјРѕРґРµР»С– Р· ID {modelId} РЅРµ Р·РЅР°Р№РґРµРЅРѕ РїРѕРєРѕР»С–РЅСЊ");
             }
 
             return Ok(generations);
@@ -206,12 +210,12 @@ namespace CarComparisonApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest("ID має бути додатним числом");
+                return BadRequest("ID РјР°С” Р±СѓС‚Рё РґРѕРґР°С‚РЅРёРј С‡РёСЃР»РѕРј");
             }
 
             var generation = await _carService.GetGenerationByIdAsync(id);
             if (generation == null)
-                return NotFound($"Покоління з ID {id} не знайдена");
+                return NotFound($"РџРѕРєРѕР»С–РЅРЅСЏ Р· ID {id} РЅРµ Р·РЅР°Р№РґРµРЅР°");
             return Ok(generation);
         }
 
@@ -220,20 +224,20 @@ namespace CarComparisonApi.Controllers
         {
             if (generationId <= 0)
             {
-                return BadRequest("ID покоління має бути додатним числом");
+                return BadRequest("ID РїРѕРєРѕР»С–РЅРЅСЏ РјР°С” Р±СѓС‚Рё РґРѕРґР°С‚РЅРёРј С‡РёСЃР»РѕРј");
             }
 
             var generationExists = await _carService.GetGenerationByIdAsync(generationId);
             if (generationExists == null)
             {
-                return NotFound($"Покоління з ID {generationId} не знайдена");
+                return NotFound($"РџРѕРєРѕР»С–РЅРЅСЏ Р· ID {generationId} РЅРµ Р·РЅР°Р№РґРµРЅР°");
             }
 
             var trims = await _carService.GetTrimsByGenerationIdAsync(generationId);
 
             if (!trims.Any())
             {
-                return NotFound($"Для покоління з ID {generationId} не знайдено комплектацій");
+                return NotFound($"Р”Р»СЏ РїРѕРєРѕР»С–РЅРЅСЏ Р· ID {generationId} РЅРµ Р·РЅР°Р№РґРµРЅРѕ РєРѕРјРїР»РµРєС‚Р°С†С–Р№");
             }
 
             return Ok(trims);
@@ -244,12 +248,12 @@ namespace CarComparisonApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest("ID має бути додатним числом");
+                return BadRequest("ID РјР°С” Р±СѓС‚Рё РґРѕРґР°С‚РЅРёРј С‡РёСЃР»РѕРј");
             }
 
             var trim = await _carService.GetTrimByIdAsync(id);
             if (trim == null)
-                return NotFound($"Комплектація з ID {id} не знайдена");
+                return NotFound($"РљРѕРјРїР»РµРєС‚Р°С†С–СЏ Р· ID {id} РЅРµ Р·РЅР°Р№РґРµРЅР°");
             return Ok(trim);
         }
 
@@ -258,18 +262,18 @@ namespace CarComparisonApi.Controllers
         {
             if (trimId <= 0)
             {
-                return BadRequest("ID комплектації має бути додатним числом");
+                return BadRequest("ID РєРѕРјРїР»РµРєС‚Р°С†С–С— РјР°С” Р±СѓС‚Рё РґРѕРґР°С‚РЅРёРј С‡РёСЃР»РѕРј");
             }
 
             var trimExists = await _carService.GetTrimByIdAsync(trimId);
             if (trimExists == null)
             {
-                return NotFound($"Комплектація з ID {trimId} не знайдена");
+                return NotFound($"РљРѕРјРїР»РµРєС‚Р°С†С–СЏ Р· ID {trimId} РЅРµ Р·РЅР°Р№РґРµРЅР°");
             }
 
             var details = await _carService.GetTechnicalDetailsByTrimIdAsync(trimId);
             if (details == null)
-                return NotFound($"Технічні характеристики для комплектації {trimId} не знайдені");
+                return NotFound($"РўРµС…РЅС–С‡РЅС– С…Р°СЂР°РєС‚РµСЂРёСЃС‚РёРєРё РґР»СЏ РєРѕРјРїР»РµРєС‚Р°С†С–С— {trimId} РЅРµ Р·РЅР°Р№РґРµРЅС–");
             return Ok(details);
         }
 
@@ -277,11 +281,11 @@ namespace CarComparisonApi.Controllers
         public async Task<IActionResult> GetGenerationDetails(int id)
         {
             if (id <= 0)
-                return BadRequest("ID має бути додатним числом");
+                return BadRequest("ID РјР°С” Р±СѓС‚Рё РґРѕРґР°С‚РЅРёРј С‡РёСЃР»РѕРј");
 
             var generation = await _carService.GetGenerationWithTrimsAsync(id);
             if (generation == null)
-                return NotFound($"Покоління з ID {id} не знайдено");
+                return NotFound($"РџРѕРєРѕР»С–РЅРЅСЏ Р· ID {id} РЅРµ Р·РЅР°Р№РґРµРЅРѕ");
 
             return Ok(generation);
         }
@@ -290,11 +294,11 @@ namespace CarComparisonApi.Controllers
         public async Task<IActionResult> GetTrimFullDetails(int id)
         {
             if (id <= 0)
-                return BadRequest("ID має бути додатним числом");
+                return BadRequest("ID РјР°С” Р±СѓС‚Рё РґРѕРґР°С‚РЅРёРј С‡РёСЃР»РѕРј");
 
             var trim = await _carService.GetTrimFullDetailsAsync(id);
             if (trim == null)
-                return NotFound($"Комплектація з ID {id} не знайдена");
+                return NotFound($"РљРѕРјРїР»РµРєС‚Р°С†С–СЏ Р· ID {id} РЅРµ Р·РЅР°Р№РґРµРЅР°");
 
             return Ok(trim);
         }

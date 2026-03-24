@@ -95,7 +95,7 @@ namespace CarComparisonApi.Services
 
             foreach (var user in allUsers)
             {
-                if (user.Username.StartsWith("NewUser") && int.TryParse(user.Username.Substring(7), out int number))
+                if (user.Username.StartsWith("NewUser") && int.TryParse(user.Username.AsSpan(7), out int number))
                 {
                     if (number > maxNumber)
                         maxNumber = number;
@@ -128,15 +128,14 @@ namespace CarComparisonApi.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        private string HashPassword(string password)
+        private static string HashPassword(string password)
         {
-            using var sha256 = System.Security.Cryptography.SHA256.Create();
             var bytes = Encoding.UTF8.GetBytes(password);
-            var hash = sha256.ComputeHash(bytes);
+            var hash = System.Security.Cryptography.SHA256.HashData(bytes);
             return Convert.ToBase64String(hash);
         }
 
-        private bool VerifyPassword(string password, string passwordHash)
+        private static bool VerifyPassword(string password, string passwordHash)
         {
             var hash = HashPassword(password);
             return hash == passwordHash;

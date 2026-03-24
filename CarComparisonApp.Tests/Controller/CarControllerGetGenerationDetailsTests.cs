@@ -21,7 +21,7 @@ namespace CarComparisonApp.Tests.Controller
         public async Task GetGenerationDetails_ValidId_ReturnsOkWithGeneration()
         {
             // Arrange
-            int generationId = 1;
+            const int generationId = 1;
 
             var generationDto = new GenerationWithTrimsDto
             {
@@ -80,7 +80,7 @@ namespace CarComparisonApp.Tests.Controller
             Assert.Equal(2024, returnedGeneration.YearTo);
             Assert.Equal("Toyota", returnedGeneration.Brand.Name);
             Assert.Equal("Camry", returnedGeneration.Model.Name);
-            Assert.Equal(2, returnedGeneration.Trims.Count());
+            Assert.Equal(2, returnedGeneration.Trims.Count);
             Assert.Contains(returnedGeneration.Trims, t => t.Name == "LE 2.5");
             Assert.Contains(returnedGeneration.Trims, t => t.Name == "Hybrid");
 
@@ -92,7 +92,7 @@ namespace CarComparisonApp.Tests.Controller
         public async Task GetGenerationDetails_ZeroId_ReturnsBadRequest()
         {
             // Arrange
-            int zeroId = 0;
+            const int zeroId = 0;
 
             // Act
             var result = await _controller.GetGenerationDetails(zeroId);
@@ -109,7 +109,7 @@ namespace CarComparisonApp.Tests.Controller
         public async Task GetGenerationDetails_NegativeId_ReturnsBadRequest()
         {
             // Arrange
-            int negativeId = -5;
+            const int negativeId = -5;
 
             // Act
             var result = await _controller.GetGenerationDetails(negativeId);
@@ -126,7 +126,7 @@ namespace CarComparisonApp.Tests.Controller
         public async Task GetGenerationDetails_NonExistingId_ReturnsNotFound()
         {
             // Arrange
-            int nonExistingId = 999;
+            const int nonExistingId = 999;
 
             A.CallTo(() => _mockCarService.GetGenerationWithTrimsAsync(nonExistingId))
                 .Returns(Task.FromResult<GenerationWithTrimsDto?>(null));

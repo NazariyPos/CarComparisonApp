@@ -9,7 +9,7 @@
         public decimal? Acceleration0To100 { get; set; }
 
         public string? EngineCode { get; set; }
-        public string? EngineType { get; set; } 
+        public string? EngineType { get; set; }
         public int? CylindersCount { get; set; }
         public int? ValvesCount { get; set; }
         public decimal? CompressionRatio { get; set; }

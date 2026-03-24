@@ -1,9 +1,12 @@
 using CarComparisonApi.Models;
 using CarComparisonApi.Models.DTOs;
 
-public interface IAuthService
+namespace CarComparisonApi.Services
 {
-    Task<AuthResponse> RegisterAsync(RegisterRequest request);
-    Task<AuthResponse> LoginAsync(LoginRequest request);
-    Task<User?> GetUserByIdAsync(int id);
+    public interface IAuthService
+    {
+        Task<AuthResponse> RegisterAsync(RegisterRequest request);
+        Task<AuthResponse> LoginAsync(LoginRequest request);
+        Task<User?> GetUserByIdAsync(int id);
+    }
 }
