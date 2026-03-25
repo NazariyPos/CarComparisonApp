@@ -60,13 +60,32 @@ After successful execution:
 - API metadata will be in api/
 - the static documentation site will be in _site/
 
-## 3) View the Generated Documentation
+## 3) Documentation Quality Check
+
+Run DocFX validation with warnings treated as errors:
+
+```bash
+./.tools/docfx build docfx.json --warningsAsErrors
+```
+
+Convenience scripts:
+
+- PowerShell:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify-docs.ps1
+```
+- Bash:
+```bash
+./scripts/verify-docs.sh
+```
+
+## 4) View the Generated Documentation
 
 Open in a browser:
 
 - `_site/index.html`
 
-## 4) Documentation Archive (optional)
+## 5) Documentation Archive (optional)
 
 To create an archive for distribution / upload:
 

@@ -27,6 +27,10 @@ namespace CarComparisonApi.Controllers
         /// </summary>
         /// <param name="trimIds">Comma-separated list of trim identifiers.</param>
         /// <returns>Comparison payload with trims and calculated highlights.</returns>
+        /// <remarks>
+        /// The method normalizes input ids, limits the comparison set to 1..4 items,
+        /// and delegates metric scoring to internal helper methods.
+        /// </remarks>
         [HttpGet("compare")]
         [SwaggerOperation(Summary = "Compare trims")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -52,6 +56,14 @@ namespace CarComparisonApi.Controllers
             return Ok(comparisonResult);
         }
 
+        /// <summary>
+        /// Calculates highlight indices for key technical parameters.
+        /// </summary>
+        /// <remarks>
+        /// For each parameter, helper <see cref="HighlightParameter{T}"/> is used.
+        /// Some parameters are "higher is better" (e.g. power), while others are
+        /// "lower is better" (e.g. acceleration, fuel consumption).
+        /// </remarks>
         private static Dictionary<string, List<int>> GetHighlights(IEnumerable<CarComparisonApi.Models.Trim> trims)
         {
             var highlights = new Dictionary<string, List<int>>();
@@ -78,6 +90,18 @@ namespace CarComparisonApi.Controllers
             return highlights;
         }
 
+        /// <summary>
+        /// Finds best and worst indices for one comparable metric.
+        /// </summary>
+        /// <typeparam name="T">Comparable metric type.</typeparam>
+        /// <param name="parameterName">Output key prefix in highlight dictionary.</param>
+        /// <param name="values">Metric values aligned with compared trims.</param>
+        /// <param name="higherIsBetter">Comparison strategy for "best" and "worst".</param>
+        /// <param name="highlights">Target dictionary for computed indices.</param>
+        /// <remarks>
+        /// Supports ties: if several trims share the same best/worst value,
+        /// all corresponding indices are returned.
+        /// </remarks>
         private static void HighlightParameter<T>(string parameterName, List<T> values, bool higherIsBetter,
             Dictionary<string, List<int>> highlights) where T : IComparable
         {

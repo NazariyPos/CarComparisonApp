@@ -1,4 +1,10 @@
 - name: Documentation
   href: index.md
+- name: Linting and Quality
+  href: linting.md
+- name: Generate Documentation
+  href: generate_docs.md
+- name: Architecture and Business Logic
+  href: architecture.md
 - name: API Reference
   href: ../api/index.md
