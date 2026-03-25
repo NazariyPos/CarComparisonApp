@@ -13,6 +13,7 @@
   - [Running the Application](#running-the-application)
 - [API Endpoints](#api-endpoints)
 - [Project Structure](#project-structure)
+- [Documentation Standards](#documentation-standards)
 - [Contributing](#contributing)
 - [License](#license)
 - [Author](#author)
@@ -127,6 +128,47 @@ Ignored by linting configuration:
 - `CarComparisonApi/Data/**`
 
 Detailed guide: `docs/linting.md`
+
+## Documentation Standards
+
+To ensure that all project participants document code in a uniform way, adhere to the following rules:
+
+### 1) XML Documentation for Key APIs
+Document `public` controllers and key methods using `///`:
+- `<summary>` – brief description of what the class/method does;
+- `<param>` – for each parameter;
+- `<returns>` – what the method returns;
+- `<remarks>` as needed for important constraints.
+
+Minimum required documentation:
+- new or modified endpoints in `Controllers/`;
+- service methods that contain business logic.
+
+### 2) Swagger (Swashbuckle) for HTTP API
+For each endpoint, add:
+- `SwaggerOperation` with a brief `Summary`;
+- `ProducesResponseType` for the main response codes (`200/400/401/404/500` as needed).
+
+This ensures up‑to‑date OpenAPI documentation in Swagger UI.
+
+### 3) DocFX for Project Documentation
+- Store descriptions of rules, processes, and guides in `docs/*.md`.
+- When documentation rules change, update:
+  - `docs/index.md` (if necessary),
+  - `docs/toc.yml`,
+  - the relevant topical file (e.g., `docs/linting.md`).
+
+### 4) What to Update for Each Feature
+When adding or modifying functionality, check this checklist:
+- [ ] XML comments for changed public methods are updated;
+- [ ] Swagger attributes for endpoints are updated;
+- [ ] `README.md` is updated if needed;
+- [ ] a page in `docs/` is added or updated if needed.
+
+### 5) Language and Style of Documentation
+- For code and API attributes, use short, unambiguous wording in English.
+- For internal guides in `docs/`, Ukrainian is allowed, but the style must be consistent within a single file.
+- Be specific: what the method does, what input parameters are expected, what errors may occur.
 
 ## API Endpoints
 
