@@ -15,6 +15,12 @@ namespace CarComparisonApi.Services
         private List<Review> _reviews = new();
         private readonly object _lock = new();
 
+        /// <summary>
+        /// Initializes review service and loads persisted reviews.
+        /// </summary>
+        /// <param name="environment">Host environment used to resolve review file path.</param>
+        /// <param name="carService">Car catalog service for enrichment of review responses.</param>
+        /// <param name="authService">Authentication service used to resolve user information.</param>
         public ReviewService(IWebHostEnvironment environment, ICarService carService, IAuthService authService)
         {
             _environment = environment;
@@ -79,6 +85,8 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Returns reviews for a specific trim.
         /// </summary>
+        /// <param name="trimId">Trim identifier.</param>
+        /// <returns>Collection of reviews for the trim.</returns>
         public Task<IEnumerable<Review>> GetReviewsByTrimIdAsync(int trimId)
         {
             lock (_lock)
@@ -90,6 +98,8 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Returns a review by identifier.
         /// </summary>
+        /// <param name="id">Review identifier.</param>
+        /// <returns>Review instance or <c>null</c> if not found.</returns>
         public Task<Review?> GetReviewByIdAsync(int id)
         {
             lock (_lock)
@@ -101,6 +111,9 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Creates a new review.
         /// </summary>
+        /// <param name="review">Review payload to create.</param>
+        /// <returns>Created review instance with assigned id and creation date.</returns>
+        /// <exception cref="ArgumentException">Thrown when rating is outside 1..10 range.</exception>
         public Task<Review> CreateReviewAsync(Review review)
         {
             lock (_lock)
@@ -119,6 +132,9 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Updates review content and rating.
         /// </summary>
+        /// <param name="id">Review identifier.</param>
+        /// <param name="review">Updated review payload.</param>
+        /// <exception cref="ArgumentException">Thrown when rating is outside 1..10 range.</exception>
         public Task UpdateReviewAsync(int id, Review review)
         {
             lock (_lock)
@@ -142,6 +158,7 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Deletes review by identifier.
         /// </summary>
+        /// <param name="id">Review identifier.</param>
         public Task DeleteReviewAsync(int id)
         {
             lock (_lock)
@@ -160,6 +177,8 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Returns all reviews authored by a specific user.
         /// </summary>
+        /// <param name="userId">User identifier.</param>
+        /// <returns>Collection of reviews for the user.</returns>
         public Task<IEnumerable<Review>> GetReviewsByUserIdAsync(int userId)
         {
             lock (_lock)
@@ -171,6 +190,8 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Returns reviews for trim enriched with user and car details.
         /// </summary>
+        /// <param name="trimId">Trim identifier.</param>
+        /// <returns>Collection of enriched review projection objects.</returns>
         public async Task<IEnumerable<object>> GetReviewsWithDetailsByTrimIdAsync(int trimId)
         {
             var reviews = await GetReviewsByTrimIdAsync(trimId);

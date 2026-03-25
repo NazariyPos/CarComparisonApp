@@ -12,6 +12,10 @@ namespace CarComparisonApi.Services
     /// <summary>
     /// Implements registration, login and JWT token generation.
     /// </summary>
+    /// <remarks>
+    /// Users are stored via <see cref="IJsonUserService"/> and access tokens are signed
+    /// with symmetric key settings from configuration.
+    /// </remarks>
     public class AuthService : IAuthService
     {
         private readonly IConfiguration _configuration;
@@ -19,6 +23,12 @@ namespace CarComparisonApi.Services
         private readonly IWebHostEnvironment _environment;
         private readonly string _usersFilePath;
 
+        /// <summary>
+        /// Initializes authentication service dependencies.
+        /// </summary>
+        /// <param name="configuration">Application configuration with JWT settings.</param>
+        /// <param name="userService">User storage service.</param>
+        /// <param name="environment">Host environment used for content root resolution.</param>
         public AuthService(IConfiguration configuration, IJsonUserService userService, IWebHostEnvironment environment)
         {
             _configuration = configuration;
@@ -30,6 +40,9 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Creates a new user account and returns authentication payload.
         /// </summary>
+        /// <param name="request">Registration payload.</param>
+        /// <returns>Authentication response with JWT token and user profile data.</returns>
+        /// <exception cref="Exception">Thrown when user with same login or email already exists.</exception>
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
             if (await _userService.UserExistsAsync(request.Login, request.Email))
@@ -69,6 +82,9 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Authenticates user credentials and returns authentication payload.
         /// </summary>
+        /// <param name="request">Login payload.</param>
+        /// <returns>Authentication response with JWT token and user profile data.</returns>
+        /// <exception cref="Exception">Thrown when credentials are invalid.</exception>
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
             var user = await _userService.GetUserByLoginOrEmailAsync(request.LoginOrEmail);
@@ -153,6 +169,8 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Returns user by identifier.
         /// </summary>
+        /// <param name="id">User identifier.</param>
+        /// <returns>User instance or <c>null</c> if not found or an error occurs.</returns>
         public async Task<User?> GetUserByIdAsync(int id)
         {
             try
@@ -172,6 +190,8 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Returns user by login.
         /// </summary>
+        /// <param name="login">User login.</param>
+        /// <returns>User instance or <c>null</c> if not found.</returns>
         public async Task<User?> GetUserByLoginAsync(string login)
         {
             return await _userService.GetUserByLoginAsync(login);

@@ -10,13 +10,57 @@ namespace CarComparisonApi.Services
     /// </summary>
     public interface IJsonUserService
     {
+        /// <summary>
+        /// Returns all users from storage.
+        /// </summary>
+        /// <returns>List of users.</returns>
         Task<List<User>> GetAllUsersAsync();
+
+        /// <summary>
+        /// Returns a user by identifier.
+        /// </summary>
+        /// <param name="id">User identifier.</param>
+        /// <returns>User instance or <c>null</c> if not found.</returns>
         Task<User?> GetUserByIdAsync(int id);
+
+        /// <summary>
+        /// Returns a user by login.
+        /// </summary>
+        /// <param name="login">User login.</param>
+        /// <returns>User instance or <c>null</c> if not found.</returns>
         Task<User?> GetUserByLoginAsync(string login);
+
+        /// <summary>
+        /// Returns a user by login or email.
+        /// </summary>
+        /// <param name="loginOrEmail">Login or email value.</param>
+        /// <returns>User instance or <c>null</c> if not found.</returns>
         Task<User?> GetUserByLoginOrEmailAsync(string loginOrEmail);
+
+        /// <summary>
+        /// Checks whether a user with the specified login or email already exists.
+        /// </summary>
+        /// <param name="login">Login to check.</param>
+        /// <param name="email">Email to check.</param>
+        /// <returns><c>true</c> if user exists; otherwise <c>false</c>.</returns>
         Task<bool> UserExistsAsync(string login, string email);
+
+        /// <summary>
+        /// Creates a user record.
+        /// </summary>
+        /// <param name="user">User data to create.</param>
         Task CreateUserAsync(User user);
+
+        /// <summary>
+        /// Updates a user record.
+        /// </summary>
+        /// <param name="user">User data to update.</param>
         Task UpdateUserAsync(User user);
+
+        /// <summary>
+        /// Deletes a user by identifier.
+        /// </summary>
+        /// <param name="id">User identifier.</param>
         Task DeleteUserAsync(int id);
     }
 
@@ -33,6 +77,7 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Initializes JSON user storage.
         /// </summary>
+        /// <param name="environment">Host environment used to resolve data file path.</param>
         public JsonUserService(IWebHostEnvironment environment)
         {
             _environment = environment;
@@ -78,6 +123,7 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Returns all users.
         /// </summary>
+        /// <returns>List of users from the JSON store.</returns>
         public Task<List<User>> GetAllUsersAsync()
         {
             lock (_lock)
@@ -89,6 +135,8 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Returns user by identifier.
         /// </summary>
+        /// <param name="id">User identifier.</param>
+        /// <returns>User instance or <c>null</c> if not found.</returns>
         public Task<User?> GetUserByIdAsync(int id)
         {
             lock (_lock)
@@ -100,6 +148,8 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Returns user by login.
         /// </summary>
+        /// <param name="login">User login.</param>
+        /// <returns>User instance or <c>null</c> if not found.</returns>
         public Task<User?> GetUserByLoginAsync(string login)
         {
             lock (_lock)
@@ -111,6 +161,8 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Returns user by login or email.
         /// </summary>
+        /// <param name="loginOrEmail">Login or email value.</param>
+        /// <returns>User instance or <c>null</c> if not found.</returns>
         public Task<User?> GetUserByLoginOrEmailAsync(string loginOrEmail)
         {
             lock (_lock)
@@ -123,6 +175,9 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Checks whether login or email is already used.
         /// </summary>
+        /// <param name="login">Login value.</param>
+        /// <param name="email">Email value.</param>
+        /// <returns><c>true</c> if user exists; otherwise <c>false</c>.</returns>
         public Task<bool> UserExistsAsync(string login, string email)
         {
             lock (_lock)
@@ -134,6 +189,7 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Creates a new user.
         /// </summary>
+        /// <param name="user">User data to persist.</param>
         public Task CreateUserAsync(User user)
         {
             lock (_lock)
@@ -148,6 +204,7 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Updates existing user.
         /// </summary>
+        /// <param name="user">User data to persist.</param>
         public Task UpdateUserAsync(User user)
         {
             lock (_lock)
@@ -166,6 +223,7 @@ namespace CarComparisonApi.Services
         /// <summary>
         /// Deletes a user by identifier.
         /// </summary>
+        /// <param name="id">User identifier.</param>
         public Task DeleteUserAsync(int id)
         {
             lock (_lock)
