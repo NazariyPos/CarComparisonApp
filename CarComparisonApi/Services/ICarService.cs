@@ -1,8 +1,11 @@
-﻿using CarComparisonApi.Models;
+using CarComparisonApi.Models;
 using CarComparisonApi.Models.DTOs;
 
 namespace CarComparisonApi.Services
 {
+    /// <summary>
+    /// Provides read/query operations for brands, models, generations and trims.
+    /// </summary>
     public interface ICarService
     {
         Task<IEnumerable<CarBrand>> GetAllBrandsAsync();
@@ -15,6 +18,9 @@ namespace CarComparisonApi.Services
         Task<Trim?> GetTrimByIdAsync(int id);
         Task<TechnicalDetails?> GetTechnicalDetailsByTrimIdAsync(int trimId);
 
+        /// <summary>
+        /// Searches the catalog and returns a filtered car hierarchy.
+        /// </summary>
         Task<IEnumerable<CarBrand>> SearchAsync(
             string? brand = null,
             string? model = null,
@@ -25,6 +31,9 @@ namespace CarComparisonApi.Services
             string? transmission = null,
             string? fuelType = null);
 
+        /// <summary>
+        /// Returns generation cards for search UI.
+        /// </summary>
         Task<IEnumerable<GenerationCardDto>> GetGenerationCardsAsync(
             string? brand = null,
             string? model = null,

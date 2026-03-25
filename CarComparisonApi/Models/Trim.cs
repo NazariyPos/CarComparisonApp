@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
 
 namespace CarComparisonApi.Models
 {
+    /// <summary>
+    /// Represents a trim level for a specific generation.
+    /// </summary>
     public class Trim
     {
         public int Id { get; set; }

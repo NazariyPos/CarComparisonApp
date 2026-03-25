@@ -2,11 +2,15 @@ using CarComparisonApi.Models;
 using CarComparisonApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace CarComparisonApi.Controllers
 {
+    /// <summary>
+    /// Provides endpoints for accessing and updating current user profile.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -19,7 +23,14 @@ namespace CarComparisonApi.Controllers
             _authService = authService;
         }
 
+        /// <summary>
+        /// Returns profile data of the currently authenticated user.
+        /// </summary>
         [HttpGet("me")]
+        [SwaggerOperation(Summary = "Get current user profile")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetCurrentUser()
         {
             var userId = GetCurrentUserId();
@@ -42,7 +53,14 @@ namespace CarComparisonApi.Controllers
             });
         }
 
+        /// <summary>
+        /// Updates profile fields for the currently authenticated user.
+        /// </summary>
         [HttpPut("profile")]
+        [SwaggerOperation(Summary = "Update current user profile")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
         {
             var userId = GetCurrentUserId();
@@ -62,7 +80,7 @@ namespace CarComparisonApi.Controllers
             if (!string.IsNullOrEmpty(request.AvatarUrl))
                 user.AvatarUrl = request.AvatarUrl;
 
-            return Ok(new { message = "Профіль оновлено" });
+            return Ok(new { message = "РџСЂРѕС„С–Р»СЊ РѕРЅРѕРІР»РµРЅРѕ" });
         }
 
         private int? GetCurrentUserId()
@@ -74,6 +92,9 @@ namespace CarComparisonApi.Controllers
         }
     }
 
+    /// <summary>
+    /// Request payload for profile updates.
+    /// </summary>
     public class UpdateProfileRequest
     {
         public string? RealName { get; set; }

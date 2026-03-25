@@ -5,6 +5,9 @@ using Newtonsoft.Json;
 
 namespace CarComparisonApi.Services
 {
+    /// <summary>
+    /// JSON-backed implementation of catalog read and search operations.
+    /// </summary>
     public class CarService : ICarService
     {
         private readonly IWebHostEnvironment _environment;
@@ -79,17 +82,26 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Returns all available car brands.
+        /// </summary>
         public Task<IEnumerable<CarBrand>> GetAllBrandsAsync()
         {
             return Task.FromResult(_carData?.AsEnumerable() ?? Enumerable.Empty<CarBrand>());
         }
 
+        /// <summary>
+        /// Returns brand by identifier.
+        /// </summary>
         public Task<CarBrand?> GetBrandByIdAsync(int id)
         {
             var brand = _carData?.FirstOrDefault(b => b.Id == id);
             return Task.FromResult(brand);
         }
 
+        /// <summary>
+        /// Returns generation details with trims.
+        /// </summary>
         public Task<GenerationWithTrimsDto?> GetGenerationWithTrimsAsync(int generationId)
         {
             foreach (var brand in _carData ?? new List<CarBrand>())
@@ -135,6 +147,9 @@ namespace CarComparisonApi.Services
 
             return Task.FromResult<GenerationWithTrimsDto?>(null);
         }
+        /// <summary>
+        /// Returns full trim details.
+        /// </summary>
         public Task<TrimFullDto?> GetTrimFullDetailsAsync(int trimId)
         {
             foreach (var brand in _carData ?? new List<CarBrand>())
@@ -184,6 +199,9 @@ namespace CarComparisonApi.Services
             return Task.FromResult<TrimFullDto?>(null);
         }
 
+        /// <summary>
+        /// Returns generation cards for search results.
+        /// </summary>
         public Task<IEnumerable<GenerationCardDto>> GetGenerationCardsAsync(
             string? brand = null,
             string? model = null,
@@ -284,6 +302,9 @@ namespace CarComparisonApi.Services
             return Task.FromResult(generationCards.AsEnumerable());
         }
 
+        /// <summary>
+        /// Returns models for a specific brand.
+        /// </summary>
         public Task<IEnumerable<CarModel>> GetModelsByBrandIdAsync(int brandId)
         {
             var models = _carData?
@@ -293,6 +314,9 @@ namespace CarComparisonApi.Services
             return Task.FromResult(models.AsEnumerable());
         }
 
+        /// <summary>
+        /// Returns model by identifier.
+        /// </summary>
         public Task<CarModel?> GetModelByIdAsync(int id)
         {
             var model = _carData?
@@ -301,6 +325,9 @@ namespace CarComparisonApi.Services
             return Task.FromResult(model);
         }
 
+        /// <summary>
+        /// Returns generations for a model.
+        /// </summary>
         public Task<IEnumerable<Generation>> GetGenerationsByModelIdAsync(int modelId)
         {
             var generations = _carData?
@@ -311,6 +338,9 @@ namespace CarComparisonApi.Services
             return Task.FromResult(generations.AsEnumerable());
         }
 
+        /// <summary>
+        /// Returns generation by identifier.
+        /// </summary>
         public Task<Generation?> GetGenerationByIdAsync(int id)
         {
             var generation = _carData?
@@ -320,6 +350,9 @@ namespace CarComparisonApi.Services
             return Task.FromResult(generation);
         }
 
+        /// <summary>
+        /// Returns trims for a generation.
+        /// </summary>
         public Task<IEnumerable<Trim>> GetTrimsByGenerationIdAsync(int generationId)
         {
             var trims = _carData?
@@ -331,6 +364,9 @@ namespace CarComparisonApi.Services
             return Task.FromResult(trims.AsEnumerable());
         }
 
+        /// <summary>
+        /// Returns trim by identifier.
+        /// </summary>
         public Task<Trim?> GetTrimByIdAsync(int id)
         {
             var trim = _carData?
@@ -341,6 +377,9 @@ namespace CarComparisonApi.Services
             return Task.FromResult(trim);
         }
 
+        /// <summary>
+        /// Returns technical details for a trim.
+        /// </summary>
         public Task<TechnicalDetails?> GetTechnicalDetailsByTrimIdAsync(int trimId)
         {
             var trim = _carData?
@@ -351,6 +390,9 @@ namespace CarComparisonApi.Services
             return Task.FromResult(trim?.TechnicalDetails);
         }
 
+        /// <summary>
+        /// Searches catalog data and returns a filtered hierarchy.
+        /// </summary>
         public Task<IEnumerable<CarBrand>> SearchAsync(
             string? brand = null,
             string? model = null,
@@ -478,6 +520,9 @@ namespace CarComparisonApi.Services
             return Task.FromResult(simplifiedBrands.AsEnumerable());
         }
 
+        /// <summary>
+        /// Returns trims selected for comparison.
+        /// </summary>
         public Task<IEnumerable<Trim>> GetTrimsForComparisonAsync(IEnumerable<int> trimIds)
         {
             var trims = _carData?

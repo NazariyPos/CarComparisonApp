@@ -3,6 +3,9 @@ using Newtonsoft.Json;
 
 namespace CarComparisonApi.Services
 {
+    /// <summary>
+    /// JSON-backed implementation for managing reviews.
+    /// </summary>
     public class ReviewService : IReviewService
     {
         private readonly IWebHostEnvironment _environment;
@@ -73,6 +76,9 @@ namespace CarComparisonApi.Services
             File.WriteAllText(_reviewsFilePath, json);
         }
 
+        /// <summary>
+        /// Returns reviews for a specific trim.
+        /// </summary>
         public Task<IEnumerable<Review>> GetReviewsByTrimIdAsync(int trimId)
         {
             lock (_lock)
@@ -81,6 +87,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Returns a review by identifier.
+        /// </summary>
         public Task<Review?> GetReviewByIdAsync(int id)
         {
             lock (_lock)
@@ -89,6 +98,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Creates a new review.
+        /// </summary>
         public Task<Review> CreateReviewAsync(Review review)
         {
             lock (_lock)
@@ -104,6 +116,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Updates review content and rating.
+        /// </summary>
         public Task UpdateReviewAsync(int id, Review review)
         {
             lock (_lock)
@@ -124,6 +139,9 @@ namespace CarComparisonApi.Services
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Deletes review by identifier.
+        /// </summary>
         public Task DeleteReviewAsync(int id)
         {
             lock (_lock)
@@ -139,6 +157,9 @@ namespace CarComparisonApi.Services
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Returns all reviews authored by a specific user.
+        /// </summary>
         public Task<IEnumerable<Review>> GetReviewsByUserIdAsync(int userId)
         {
             lock (_lock)
@@ -147,6 +168,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Returns reviews for trim enriched with user and car details.
+        /// </summary>
         public async Task<IEnumerable<object>> GetReviewsWithDetailsByTrimIdAsync(int trimId)
         {
             var reviews = await GetReviewsByTrimIdAsync(trimId);

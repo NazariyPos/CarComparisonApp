@@ -9,6 +9,9 @@ using Newtonsoft.Json;
 
 namespace CarComparisonApi.Services
 {
+    /// <summary>
+    /// Implements registration, login and JWT token generation.
+    /// </summary>
     public class AuthService : IAuthService
     {
         private readonly IConfiguration _configuration;
@@ -24,10 +27,13 @@ namespace CarComparisonApi.Services
             _usersFilePath = Path.Combine(environment.ContentRootPath, "Data", "users.json");
         }
 
+        /// <summary>
+        /// Creates a new user account and returns authentication payload.
+        /// </summary>
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
             if (await _userService.UserExistsAsync(request.Login, request.Email))
-                throw new Exception("Користувач з таким логіном або email вже існує");
+                throw new Exception("РљРѕСЂРёСЃС‚СѓРІР°С‡ Р· С‚Р°РєРёРј Р»РѕРіС–РЅРѕРј Р°Р±Рѕ email РІР¶Рµ С–СЃРЅСѓС”");
 
             string username = await GenerateUniqueUsernameAsync();
 
@@ -60,11 +66,14 @@ namespace CarComparisonApi.Services
             };
         }
 
+        /// <summary>
+        /// Authenticates user credentials and returns authentication payload.
+        /// </summary>
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
             var user = await _userService.GetUserByLoginOrEmailAsync(request.LoginOrEmail);
             if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
-                throw new Exception("Неправильний логін або пароль");
+                throw new Exception("РќРµРїСЂР°РІРёР»СЊРЅРёР№ Р»РѕРіС–РЅ Р°Р±Рѕ РїР°СЂРѕР»СЊ");
 
             user.LastLogin = DateTime.UtcNow;
             await _userService.UpdateUserAsync(user);
@@ -141,6 +150,9 @@ namespace CarComparisonApi.Services
             return hash == passwordHash;
         }
 
+        /// <summary>
+        /// Returns user by identifier.
+        /// </summary>
         public async Task<User?> GetUserByIdAsync(int id)
         {
             try
@@ -157,6 +169,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Returns user by login.
+        /// </summary>
         public async Task<User?> GetUserByLoginAsync(string login)
         {
             return await _userService.GetUserByLoginAsync(login);

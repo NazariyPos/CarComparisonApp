@@ -1,5 +1,8 @@
-﻿namespace CarComparisonApi.Models
+namespace CarComparisonApi.Models
 {
+    /// <summary>
+    /// Represents a user's favorite trim entry.
+    /// </summary>
     public class Favorite
     {
         public int Id { get; set; }

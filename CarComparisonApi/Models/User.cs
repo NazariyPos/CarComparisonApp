@@ -1,7 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace CarComparisonApi.Models
 {
+    /// <summary>
+    /// Represents an application user.
+    /// </summary>
     public class User
     {
         public int Id { get; set; }

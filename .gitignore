@@ -34,3 +34,15 @@ secret-*.json
 
 .DS_Store
 Thumbs.db
+
+_site/
+api/
+documentation-archive.zip
+docs/swagger.json
+
+.tools/
+
+roslynator-report*.txt
+
+*.DotSettings.user
+*.slnLaunch.user

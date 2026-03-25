@@ -5,9 +5,13 @@ using CarComparisonApi.Models;
 using CarComparisonApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace CarComparisonApi.Controllers
 {
+    /// <summary>
+    /// Provides endpoints for creating, reading, updating and deleting reviews.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class ReviewsController : ControllerBase
@@ -23,16 +27,28 @@ namespace CarComparisonApi.Controllers
             _authService = authService;
         }
 
+        /// <summary>
+        /// Returns reviews for a specific trim.
+        /// </summary>
         [HttpGet("trim/{trimId}")]
         [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get reviews by trim")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetReviewsByTrim(int trimId)
         {
             var reviewsWithDetails = await _reviewService.GetReviewsWithDetailsByTrimIdAsync(trimId);
             return Ok(reviewsWithDetails);
         }
 
+        /// <summary>
+        /// Creates a new review for a trim.
+        /// </summary>
         [HttpPost]
         [Authorize]
+        [SwaggerOperation(Summary = "Create review")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> CreateReview([FromBody] Review review)
         {
             var userId = GetCurrentUserId();
@@ -40,7 +56,7 @@ namespace CarComparisonApi.Controllers
                 return Unauthorized();
 
             if (review.Rating < 1 || review.Rating > 10)
-                return BadRequest("–ÂÈÚËÌ„ Ï‡∫ ·ÛÚË ‚ ‰≥‡Ô‡ÁÓÌ≥ ‚≥‰ 1 ‰Ó 10");
+                return BadRequest("–†–µ–π—Ç–∏–Ω–≥ –º–∞—î –±—É—Ç–∏ –≤ –¥—ñ–∞–ø–∞–∑–æ–Ω—ñ –≤—ñ–¥ 1 –¥–æ 10");
 
             review.UserId = userId.Value;
             review.CreatedAt = DateTime.UtcNow;
@@ -54,8 +70,14 @@ namespace CarComparisonApi.Controllers
             return CreatedAtAction(nameof(GetReviewById), new { id = createdReview.Id }, newReview);
         }
 
+        /// <summary>
+        /// Returns a single review by identifier.
+        /// </summary>
         [HttpGet("{id}")]
         [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get review by ID")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetReviewById(int id)
         {
             var review = await _reviewService.GetReviewByIdAsync(id);
@@ -72,8 +94,15 @@ namespace CarComparisonApi.Controllers
             return Ok(reviewWithDetails);
         }
 
+        /// <summary>
+        /// Updates an existing review.
+        /// </summary>
         [HttpPut("{id}")]
         [Authorize]
+        [SwaggerOperation(Summary = "Update review")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateReview(int id, [FromBody] Review updatedReview)
         {
             var existingReview = await _reviewService.GetReviewByIdAsync(id);
@@ -85,7 +114,7 @@ namespace CarComparisonApi.Controllers
                 return Forbid();
 
             if (updatedReview.Rating < 1 || updatedReview.Rating > 10)
-                return BadRequest("–ÂÈÚËÌ„ Ï‡∫ ·ÛÚË ‚ ‰≥‡Ô‡ÁÓÌ≥ ‚≥‰ 1 ‰Ó 10");
+                return BadRequest("–†–µ–π—Ç–∏–Ω–≥ –º–∞—î –±—É—Ç–∏ –≤ –¥—ñ–∞–ø–∞–∑–æ–Ω—ñ –≤—ñ–¥ 1 –¥–æ 10");
 
             updatedReview.Id = id;
             updatedReview.UserId = userId.Value;
@@ -100,8 +129,15 @@ namespace CarComparisonApi.Controllers
             return Ok(updatedReviewWithDetails);
         }
 
+        /// <summary>
+        /// Deletes an existing review.
+        /// </summary>
         [HttpDelete("{id}")]
         [Authorize]
+        [SwaggerOperation(Summary = "Delete review")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteReview(int id)
         {
             var review = await _reviewService.GetReviewByIdAsync(id);
@@ -116,8 +152,13 @@ namespace CarComparisonApi.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Returns reviews created by a specific user.
+        /// </summary>
         [HttpGet("user/{userId}")]
         [AllowAnonymous]
+        [SwaggerOperation(Summary = "Get reviews by user")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetReviewsByUser(int userId)
         {
             var reviews = await _reviewService.GetReviewsByUserIdAsync(userId);
@@ -141,7 +182,7 @@ namespace CarComparisonApi.Controllers
                                 result.Add(new
                                 {
                                     Review = review,
-                                    Username = user?.Username ?? "ÕÂ‚≥‰ÓÏËÈ",
+                                    Username = user?.Username ?? "–ù–µ–≤—ñ–¥–æ–º–∏–π",
                                     Model = model.Name,
                                     Generation = generation.Name,
                                     Trim = trim.Name,

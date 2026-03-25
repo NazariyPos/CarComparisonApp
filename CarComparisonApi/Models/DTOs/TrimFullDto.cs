@@ -2,6 +2,9 @@ using CarComparisonApi.Models;
 
 namespace CarComparisonApi.Models.DTOs
 {
+    /// <summary>
+    /// Full trim response with hierarchy and technical details.
+    /// </summary>
     public class TrimFullDto
     {
         public int Id { get; set; }
@@ -16,6 +19,9 @@ namespace CarComparisonApi.Models.DTOs
         public TechnicalDetails? TechnicalDetails { get; set; }
     }
 
+    /// <summary>
+    /// Basic generation data.
+    /// </summary>
     public class GenerationBasicDto
     {
         public int Id { get; set; }
@@ -25,6 +31,9 @@ namespace CarComparisonApi.Models.DTOs
         public string? PhotoUrl { get; set; }
     }
 
+    /// <summary>
+    /// Basic model data.
+    /// </summary>
     public class ModelBasicDto
     {
         public int Id { get; set; }
@@ -32,6 +41,9 @@ namespace CarComparisonApi.Models.DTOs
         public string BodyType { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Basic brand data.
+    /// </summary>
     public class BrandBasicDto
     {
         public int Id { get; set; }

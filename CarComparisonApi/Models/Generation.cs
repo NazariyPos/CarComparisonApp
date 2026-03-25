@@ -1,5 +1,8 @@
-﻿namespace CarComparisonApi.Models
+namespace CarComparisonApi.Models
 {
+    /// <summary>
+    /// Represents a model generation and its trims.
+    /// </summary>
     public class Generation
     {
         public int Id { get; set; }

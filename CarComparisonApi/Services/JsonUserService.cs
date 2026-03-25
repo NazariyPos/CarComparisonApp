@@ -5,6 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace CarComparisonApi.Services
 {
+    /// <summary>
+    /// Contract for JSON-based user storage operations.
+    /// </summary>
     public interface IJsonUserService
     {
         Task<List<User>> GetAllUsersAsync();
@@ -17,6 +20,9 @@ namespace CarComparisonApi.Services
         Task DeleteUserAsync(int id);
     }
 
+    /// <summary>
+    /// JSON-file implementation of user storage service.
+    /// </summary>
     public class JsonUserService : IJsonUserService
     {
         private readonly IWebHostEnvironment _environment;
@@ -24,6 +30,9 @@ namespace CarComparisonApi.Services
         private List<User> _users = new();
         private readonly object _lock = new();
 
+        /// <summary>
+        /// Initializes JSON user storage.
+        /// </summary>
         public JsonUserService(IWebHostEnvironment environment)
         {
             _environment = environment;
@@ -66,6 +75,9 @@ namespace CarComparisonApi.Services
             File.WriteAllText(_usersFilePath, json);
         }
 
+        /// <summary>
+        /// Returns all users.
+        /// </summary>
         public Task<List<User>> GetAllUsersAsync()
         {
             lock (_lock)
@@ -74,6 +86,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Returns user by identifier.
+        /// </summary>
         public Task<User?> GetUserByIdAsync(int id)
         {
             lock (_lock)
@@ -82,6 +97,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Returns user by login.
+        /// </summary>
         public Task<User?> GetUserByLoginAsync(string login)
         {
             lock (_lock)
@@ -90,6 +108,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Returns user by login or email.
+        /// </summary>
         public Task<User?> GetUserByLoginOrEmailAsync(string loginOrEmail)
         {
             lock (_lock)
@@ -99,6 +120,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Checks whether login or email is already used.
+        /// </summary>
         public Task<bool> UserExistsAsync(string login, string email)
         {
             lock (_lock)
@@ -107,6 +131,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Creates a new user.
+        /// </summary>
         public Task CreateUserAsync(User user)
         {
             lock (_lock)
@@ -118,6 +145,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Updates existing user.
+        /// </summary>
         public Task UpdateUserAsync(User user)
         {
             lock (_lock)
@@ -133,6 +163,9 @@ namespace CarComparisonApi.Services
             }
         }
 
+        /// <summary>
+        /// Deletes a user by identifier.
+        /// </summary>
         public Task DeleteUserAsync(int id)
         {
             lock (_lock)

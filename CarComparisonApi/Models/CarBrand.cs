@@ -1,5 +1,8 @@
-﻿namespace CarComparisonApi.Models
+namespace CarComparisonApi.Models
 {
+    /// <summary>
+    /// Represents a car brand with related models.
+    /// </summary>
     public class CarBrand
     {
         public int Id { get; set; }

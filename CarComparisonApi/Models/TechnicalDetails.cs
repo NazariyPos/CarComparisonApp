@@ -1,5 +1,8 @@
-﻿namespace CarComparisonApi.Models
+namespace CarComparisonApi.Models
 {
+    /// <summary>
+    /// Contains technical specifications of a trim.
+    /// </summary>
     public class TechnicalDetails
     {
         public int Id { get; set; }

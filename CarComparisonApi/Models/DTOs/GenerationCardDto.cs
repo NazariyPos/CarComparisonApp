@@ -1,5 +1,8 @@
 namespace CarComparisonApi.Models.DTOs
 {
+    /// <summary>
+    /// Card-like summary of a generation used in search responses.
+    /// </summary>
     public class GenerationCardDto
     {
         public int GenerationId { get; set; }

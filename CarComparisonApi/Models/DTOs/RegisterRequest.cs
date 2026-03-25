@@ -2,12 +2,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CarComparisonApi.Models.DTOs
 {
+    /// <summary>
+    /// Request payload for user registration.
+    /// </summary>
     public class RegisterRequest
     {
         [Required]
         [StringLength(20, MinimumLength = 3)]
         [RegularExpression("^[a-zA-Z0-9_]+$",
-            ErrorMessage = "Логін може містити тільки латинські літери, цифри та знак підкреслення")]
+            ErrorMessage = "Р›РѕРіС–РЅ РјРѕР¶Рµ РјС–СЃС‚РёС‚Рё С‚С–Р»СЊРєРё Р»Р°С‚РёРЅСЃСЊРєС– Р»С–С‚РµСЂРё, С†РёС„СЂРё С‚Р° Р·РЅР°Рє РїС–РґРєСЂРµСЃР»РµРЅРЅСЏ")]
         public string Login { get; set; } = string.Empty;
 
         [Required]
@@ -17,7 +20,7 @@ namespace CarComparisonApi.Models.DTOs
         [Required]
         [MinLength(8)]
         [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$",
-            ErrorMessage = "Пароль має містити принаймні одну велику літеру, одну малу літеру та одну цифру")]
+            ErrorMessage = "РџР°СЂРѕР»СЊ РјР°С” РјС–СЃС‚РёС‚Рё РїСЂРёРЅР°Р№РјРЅС– РѕРґРЅСѓ РІРµР»РёРєСѓ Р»С–С‚РµСЂСѓ, РѕРґРЅСѓ РјР°Р»Сѓ Р»С–С‚РµСЂСѓ С‚Р° РѕРґРЅСѓ С†РёС„СЂСѓ")]
         public string Password { get; set; } = string.Empty;
 
         public string? RealName { get; set; }

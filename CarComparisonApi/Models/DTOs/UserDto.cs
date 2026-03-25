@@ -1,5 +1,8 @@
 namespace CarComparisonApi.Models.DTOs
 {
+    /// <summary>
+    /// Public user profile data returned by authentication endpoints.
+    /// </summary>
     public class UserDto
     {
         public int Id { get; set; }
@@ -12,6 +15,9 @@ namespace CarComparisonApi.Models.DTOs
         public string? AvatarUrl { get; set; }
     }
 
+    /// <summary>
+    /// Authentication response that contains JWT token and user info.
+    /// </summary>
     public class AuthResponse
     {
         public string Token { get; set; } = string.Empty;

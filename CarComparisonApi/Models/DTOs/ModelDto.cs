@@ -1,5 +1,8 @@
 namespace CarComparisonApi.Models.DTOs
 {
+    /// <summary>
+    /// Lightweight model representation for API responses.
+    /// </summary>
     public class ModelDto
     {
         public int Id { get; set; }

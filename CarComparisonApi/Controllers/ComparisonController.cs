@@ -4,9 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using CarComparisonApi.Services;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace CarComparisonApi.Controllers
 {
+    /// <summary>
+    /// Provides trim comparison endpoint with highlighted best/worst metrics.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class ComparisonController : ControllerBase
@@ -18,7 +22,15 @@ namespace CarComparisonApi.Controllers
             _carService = carService;
         }
 
+        /// <summary>
+        /// Compares up to four trims by selected technical parameters.
+        /// </summary>
+        /// <param name="trimIds">Comma-separated list of trim identifiers.</param>
+        /// <returns>Comparison payload with trims and calculated highlights.</returns>
         [HttpGet("compare")]
+        [SwaggerOperation(Summary = "Compare trims")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Compare([FromQuery] string trimIds)
         {
             var ids = trimIds.Split(',')
@@ -27,7 +39,7 @@ namespace CarComparisonApi.Controllers
                 .ToList();
 
             if (ids.Count == 0 || ids.Count > 4)
-                return BadRequest("����� ���������� �� 1 �� 4 ������������");
+                return BadRequest("Потрібно вказати від 1 до 4 комплектацій");
 
             var trims = await _carService.GetTrimsForComparisonAsync(ids);
 
