@@ -38,6 +38,9 @@ Ignored paths/files:
   - `dotnet restore CarComparisonApi/CarComparisonApi.csproj`
   - `dotnet restore CarComparisonApp.Tests/CarComparisonApp.Tests.csproj`
 - Run the linter: `dotnet roslynator analyze CarComparisonApi/CarComparisonApi.csproj CarComparisonApp.Tests/CarComparisonApp.Tests.csproj`
+- Run documentation quality checks:
+  - `powershell -ExecutionPolicy Bypass -File scripts/verify-docs.ps1`
+  - or `./scripts/verify-docs.sh`
 - Check during build:
   - `dotnet build CarComparisonApi/CarComparisonApi.csproj --no-restore`
   - `dotnet build CarComparisonApp.Tests/CarComparisonApp.Tests.csproj --no-restore`
@@ -51,8 +54,9 @@ What the hook does before commit:
 2. `dotnet restore CarComparisonApi/CarComparisonApi.csproj`
 3. `dotnet restore CarComparisonApp.Tests/CarComparisonApp.Tests.csproj`
 4. `dotnet roslynator analyze ...`
-5. `dotnet build CarComparisonApi/CarComparisonApi.csproj --no-restore`
-6. `dotnet build CarComparisonApp.Tests/CarComparisonApp.Tests.csproj --no-restore`
+5. `./scripts/verify-docs.sh`
+6. `dotnet build CarComparisonApi/CarComparisonApi.csproj --no-restore`
+7. `dotnet build CarComparisonApp.Tests/CarComparisonApp.Tests.csproj --no-restore`
 
 Enabling the hooks:
 - `./scripts/setup-git-hooks.ps1`
@@ -70,14 +74,17 @@ Linting is integrated into the build process as follows:
 Added scripts:
 - `scripts/verify.ps1`
 - `scripts/verify.sh`
+- `scripts/verify-docs.ps1`
+- `scripts/verify-docs.sh`
 
 Basic verification:
 1. `dotnet tool restore`
 2. `dotnet restore CarComparisonApi/CarComparisonApi.csproj`
 3. `dotnet restore CarComparisonApp.Tests/CarComparisonApp.Tests.csproj`
 4. `dotnet roslynator analyze ...`
-5. `dotnet build CarComparisonApi/CarComparisonApi.csproj --no-restore`
-6. `dotnet build CarComparisonApp.Tests/CarComparisonApp.Tests.csproj --no-restore`
+5. documentation quality check via DocFX (`--warningsAsErrors`)
+6. `dotnet build CarComparisonApi/CarComparisonApi.csproj --no-restore`
+7. `dotnet build CarComparisonApp.Tests/CarComparisonApp.Tests.csproj --no-restore`
 
 Optionally with tests:
 - `./scripts/verify.ps1 -IncludeTests`

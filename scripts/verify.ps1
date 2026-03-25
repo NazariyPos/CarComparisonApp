@@ -23,6 +23,12 @@ Invoke-Dotnet @("restore", "CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
 Write-Host "[verify] Running Roslynator"
 Invoke-Dotnet @("roslynator", "analyze", "CarComparisonApi/CarComparisonApi.csproj", "CarComparisonApp.Tests/CarComparisonApp.Tests.csproj")
 
+Write-Host "[verify] Running documentation quality checks"
+powershell -ExecutionPolicy Bypass -File scripts/verify-docs.ps1
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
 Write-Host "[verify] Building projects"
 Invoke-Dotnet @("build", "CarComparisonApi/CarComparisonApi.csproj", "--no-restore")
 Invoke-Dotnet @("build", "CarComparisonApp.Tests/CarComparisonApp.Tests.csproj", "--no-restore")

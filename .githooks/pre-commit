@@ -7,6 +7,15 @@ dotnet tool restore
 dotnet restore CarComparisonApi/CarComparisonApi.csproj
 dotnet restore CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
 dotnet roslynator analyze CarComparisonApi/CarComparisonApi.csproj CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
+
+if command -v powershell >/dev/null 2>&1; then
+  powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-docs.ps1
+elif command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -File scripts/verify-docs.ps1
+else
+  ./scripts/verify-docs.sh
+fi
+
 dotnet build CarComparisonApi/CarComparisonApi.csproj --no-restore
 dotnet build CarComparisonApp.Tests/CarComparisonApp.Tests.csproj --no-restore
 

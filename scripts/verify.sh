@@ -16,6 +16,9 @@ dotnet restore CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
 echo "[verify] Running Roslynator"
 dotnet roslynator analyze CarComparisonApi/CarComparisonApi.csproj CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
 
+echo "[verify] Running documentation quality checks"
+./scripts/verify-docs.sh
+
 echo "[verify] Building projects"
 dotnet build CarComparisonApi/CarComparisonApi.csproj --no-restore
 dotnet build CarComparisonApp.Tests/CarComparisonApp.Tests.csproj --no-restore

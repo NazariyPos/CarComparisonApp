@@ -119,6 +119,15 @@ PowerShell:
 ./scripts/verify.ps1
 ```
 
+### Documentation quality check
+```bash
+./scripts/verify-docs.sh
+```
+PowerShell:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify-docs.ps1
+```
+
 Ignored by linting configuration:
 - `**/bin/**`
 - `**/obj/**`
@@ -153,10 +162,11 @@ This ensures up‑to‑date OpenAPI documentation in Swagger UI.
 
 ### 3) DocFX for Project Documentation
 - Store descriptions of rules, processes, and guides in `docs/*.md`.
+- Architectural decisions, business logic, difficult algorithms, and component interactions must be documented in `docs/architecture.md`.
 - When documentation rules change, update:
   - `docs/index.md` (if necessary),
   - `docs/toc.yml`,
-  - the relevant topical file (e.g., `docs/linting.md`).
+  - the relevant topical file (e.g., `docs/linting.md`, `docs/architecture.md`).
 
 ### 4) What to Update for Each Feature
 When adding or modifying functionality, check this checklist:
