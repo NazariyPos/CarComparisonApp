@@ -14,11 +14,17 @@
   "build": {
     "content": [
       {
+        "src": "docs",
+        "files": [
+          "**.md",
+          "toc.yml"
+        ]
+      },
+      {
         "files": [
           "api/**.yml",
-          "api/index.md",
-          "docs/**.md",
-          "docs/toc.yml"
+          "api/**.md",
+          "api/toc.yml"
         ]
       }
     ],
