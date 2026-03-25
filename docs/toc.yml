@@ -6,5 +6,7 @@
   href: generate_docs.md
 - name: Architecture and Business Logic
   href: architecture.md
+- name: Test-Driven Documentation
+  href: test-driven-documentation.md
 - name: API Reference
   href: ../api/index.md
