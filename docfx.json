@@ -17,7 +17,7 @@
         "src": "docs",
         "files": [
           "**.md",
-          "toc.yml"
+          "**/toc.yml"
         ]
       },
       {

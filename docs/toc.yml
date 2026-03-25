@@ -1,12 +1,8 @@
 - name: Documentation
   href: index.md
-- name: Linting and Quality
-  href: linting.md
-- name: Generate Documentation
-  href: generate_docs.md
-- name: Architecture and Business Logic
-  href: architecture.md
-- name: Test-Driven Documentation
-  href: test-driven-documentation.md
+- name: English
+  href: en/toc.yml
+- name: Українська
+  href: uk/toc.yml
 - name: API Reference
   href: ../api/toc.yml

@@ -158,7 +158,9 @@ Ignored by linting configuration:
 - `**/*.Designer.cs`
 - `CarComparisonApi/Data/**`
 
-Detailed guide: `docs/linting.md`
+Detailed guides:
+- English: `docs/en/linting.md`
+- Українська: `docs/uk/linting.md`
 
 ## Documentation Standards
 
@@ -183,12 +185,13 @@ For each endpoint, add:
 This ensures up‑to‑date OpenAPI documentation in Swagger UI.
 
 ### 3) DocFX for Project Documentation
-- Store descriptions of rules, processes, and guides in `docs/*.md`.
-- Architectural decisions, business logic, difficult algorithms, and component interactions must be documented in `docs/architecture.md`.
+- Store English pages in `docs/en/` and Ukrainian pages in `docs/uk/`.
+- The root `docs/index.md` acts as a language selector.
+- Architectural decisions, business logic, difficult algorithms, and component interactions must be documented in both languages when relevant.
 - When documentation rules change, update:
   - `docs/index.md` (if necessary),
   - `docs/toc.yml`,
-  - the relevant topical file (e.g., `docs/linting.md`, `docs/architecture.md`).
+  - language-specific files in `docs/en/` and `docs/uk/`.
 
 ### 4) What to Update for Each Feature
 When adding or modifying functionality, check this checklist:

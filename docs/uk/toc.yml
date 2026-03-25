@@ -1,0 +1,12 @@
+- name: Документація (UK)
+  href: index.md
+- name: Лінтинг і quality checks
+  href: linting.md
+- name: Генерація документації
+  href: generate_docs.md
+- name: Архітектура та бізнес-логіка
+  href: architecture.md
+- name: Жива документація (TDD)
+  href: test-driven-documentation.md
+- name: API Reference
+  href: ../../api/toc.yml

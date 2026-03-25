@@ -1,20 +1,11 @@
-# CarComparisonApi Documentation
+# Documentation
 
-This site is generated with `DocFX`.
+This documentation is available in two languages.
 
-## What is included
+## Choose language
 
-- API reference generated from XML comments and C# symbols.
-- Architecture decisions and component interaction documentation.
-- Business-logic documentation for core flows.
-- Linting and documentation-generation guides.
-
-## Main pages
-
-- `architecture.md` — architecture decisions, business logic, complex algorithms, component interaction.
-- `linting.md` — linting rules and quality gates.
-- `generate_docs.md` — how to generate Swagger + DocFX documentation.
-- `test-driven-documentation.md` — executable usage examples based on unit tests.
+- English: `en/index.md`
+- Українська: `uk/index.md`
 
 ## Build docs locally
 
