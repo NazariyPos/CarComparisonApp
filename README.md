@@ -51,6 +51,28 @@ CarComparisonApp allows users to browse a catalog of cars, add them to a compari
 - Node.js + npm (optional, for the React client)
 - Git
 
+### Documentation Website (GitHub Pages)
+The project documentation site is published with GitHub Pages from DocFX output.
+
+Expected URL format:
+- `https://<github-username>.github.io/CarComparisonApp/`
+
+Repository setting required (one-time):
+1. Open repository `Settings` -> `Pages`.
+2. In `Build and deployment`, set `Source` to `GitHub Actions`.
+
+### CI/CD for Documentation
+A workflow is configured in `.github/workflows/docs-pages.yml`.
+
+What it does on each push to `main`:
+1. Checks out repository.
+2. Installs .NET 8 SDK.
+3. Installs DocFX.
+4. Builds documentation via `docfx.json` with `--warningsAsErrors`.
+5. Publishes `_site` to GitHub Pages.
+
+Manual run is available via `workflow_dispatch` in GitHub Actions.
+
 ### Cloning the Repository
 ```bash
 git clone https://github.com/vxmotors/CarComparisonApp.git 
