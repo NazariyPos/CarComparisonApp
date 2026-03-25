@@ -126,7 +126,7 @@ Ignored by linting configuration:
 - `**/*.Designer.cs`
 - `CarComparisonApi/Data/**`
 
-Detailed guide: `linting.md`
+Detailed guide: `docs/linting.md`
 
 ## API Endpoints
 

@@ -1,0 +1,37 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": [
+            "CarComparisonApi/CarComparisonApi.csproj"
+          ]
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "api/**.yml",
+          "api/index.md",
+          "docs/**.md",
+          "docs/toc.yml"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "docs/images/**"
+        ]
+      }
+    ],
+    "dest": "_site",
+    "globalMetadata": {
+      "_appTitle": "CarComparisonApi Documentation"
+    }
+  }
+}
