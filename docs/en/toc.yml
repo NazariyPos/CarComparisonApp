@@ -12,5 +12,7 @@
   href: update.md
 - name: Production Deployment Guide
   href: production-deployment.md
+- name: Backup and Restore Guide
+  href: backup.md
 - name: API Reference
   href: ../../api/toc.yml

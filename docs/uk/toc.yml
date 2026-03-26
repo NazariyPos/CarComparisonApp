@@ -12,5 +12,7 @@
   href: update.md
 - name: Production розгортання
   href: production-deployment.md
+- name: Резервне копіювання та відновлення
+  href: backup.md
 - name: API Reference
   href: ../../api/toc.yml

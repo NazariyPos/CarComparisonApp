@@ -17,6 +17,7 @@
 - `test-driven-documentation.md` — «жива» документація на базі тестів.
 - `update.md` — покроковий процес оновлення системи та детальний rollback.
 - `production-deployment.md` — гайд з production-розгортання для Release Engineer / DevOps.
+- `backup.md` — стратегія резервного копіювання, автоматизація, перевірка цілісності та відновлення.
 
 ## Перемикання мов
 
