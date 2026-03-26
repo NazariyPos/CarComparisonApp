@@ -15,6 +15,7 @@ This site is generated with `DocFX`.
 - `linting.md` — linting rules and quality gates.
 - `generate_docs.md` — how to generate Swagger + DocFX documentation.
 - `test-driven-documentation.md` — executable usage examples based on unit tests.
+- `update.md` — step-by-step system update process with detailed rollback.
 - `production-deployment.md` — production deployment guide for Release Engineer / DevOps.
 
 ## Language switch

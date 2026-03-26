@@ -8,6 +8,8 @@
   href: architecture.md
 - name: Жива документація (TDD)
   href: test-driven-documentation.md
+- name: Оновлення системи (Update)
+  href: update.md
 - name: Production розгортання
   href: production-deployment.md
 - name: API Reference
