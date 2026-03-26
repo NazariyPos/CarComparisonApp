@@ -8,5 +8,7 @@
   href: architecture.md
 - name: Жива документація (TDD)
   href: test-driven-documentation.md
+- name: Production розгортання
+  href: production-deployment.md
 - name: API Reference
   href: ../../api/toc.yml

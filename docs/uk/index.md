@@ -15,6 +15,7 @@
 - `linting.md` — правила лінтингу та quality checks.
 - `generate_docs.md` — генерація Swagger + DocFX документації.
 - `test-driven-documentation.md` — «жива» документація на базі тестів.
+- `production-deployment.md` — гайд з production-розгортання для Release Engineer / DevOps.
 
 ## Перемикання мов
 

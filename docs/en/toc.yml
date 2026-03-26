@@ -8,5 +8,7 @@
   href: architecture.md
 - name: Test-Driven Documentation
   href: test-driven-documentation.md
+- name: Production Deployment Guide
+  href: production-deployment.md
 - name: API Reference
   href: ../../api/toc.yml
