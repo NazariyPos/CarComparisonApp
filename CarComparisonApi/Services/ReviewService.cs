@@ -8,7 +8,6 @@ namespace CarComparisonApi.Services
     /// </summary>
     public class ReviewService : IReviewService
     {
-        private readonly IWebHostEnvironment _environment;
         private readonly ICarService _carService;
         private readonly IAuthService _authService;
         private readonly string _reviewsFilePath;
@@ -23,7 +22,6 @@ namespace CarComparisonApi.Services
         /// <param name="authService">Authentication service used to resolve user information.</param>
         public ReviewService(IWebHostEnvironment environment, ICarService carService, IAuthService authService)
         {
-            _environment = environment;
             _carService = carService;
             _authService = authService;
             _reviewsFilePath = Path.Combine(environment.ContentRootPath, "Data", "reviews.json");

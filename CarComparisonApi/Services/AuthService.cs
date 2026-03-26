@@ -20,21 +20,16 @@ namespace CarComparisonApi.Services
     {
         private readonly IConfiguration _configuration;
         private readonly IJsonUserService _userService;
-        private readonly IWebHostEnvironment _environment;
-        private readonly string _usersFilePath;
 
         /// <summary>
         /// Initializes authentication service dependencies.
         /// </summary>
         /// <param name="configuration">Application configuration with JWT settings.</param>
         /// <param name="userService">User storage service.</param>
-        /// <param name="environment">Host environment used for content root resolution.</param>
-        public AuthService(IConfiguration configuration, IJsonUserService userService, IWebHostEnvironment environment)
+        public AuthService(IConfiguration configuration, IJsonUserService userService)
         {
             _configuration = configuration;
             _userService = userService;
-            _environment = environment;
-            _usersFilePath = Path.Combine(environment.ContentRootPath, "Data", "users.json");
         }
 
         /// <summary>

@@ -69,7 +69,6 @@ namespace CarComparisonApi.Services
     /// </summary>
     public class JsonUserService : IJsonUserService
     {
-        private readonly IWebHostEnvironment _environment;
         private readonly string _usersFilePath;
         private List<User> _users = new();
         private readonly object _lock = new();
@@ -80,7 +79,6 @@ namespace CarComparisonApi.Services
         /// <param name="environment">Host environment used to resolve data file path.</param>
         public JsonUserService(IWebHostEnvironment environment)
         {
-            _environment = environment;
             _usersFilePath = Path.Combine(environment.ContentRootPath, "Data", "users.json");
             LoadUsers();
         }

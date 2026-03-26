@@ -108,7 +108,7 @@ namespace CarComparisonApp.Tests.IntegrationTests
             _configuration = configurationBuilder.Build();
 
             _userService = new JsonUserService(_environment);
-            _authService = new AuthService(_configuration, _userService, _environment);
+            _authService = new AuthService(_configuration, _userService);
             _authController = new AuthController(_authService);
 
             Console.WriteLine($"ContentRootPath: {_environment.ContentRootPath}");

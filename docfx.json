@@ -8,7 +8,15 @@
           ]
         }
       ],
-      "dest": "api"
+      "dest": "api",
+      "properties": {
+        "RunAnalyzers": "false",
+        "RunAnalyzersDuringBuild": "false",
+        "RunAnalyzersDuringLiveAnalysis": "false"
+      },
+      "suppress": [
+        "FailedToLoadAnalyzer"
+      ]
     }
   ],
   "build": {
