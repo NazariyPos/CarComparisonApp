@@ -103,6 +103,30 @@ dotnet run
 ```
 After startup, the API will be available on configured HTTP/HTTPS ports.
 
+Automated run scripts:
+
+Development (with hot reload):
+```bash
+./scripts/run-dev.sh
+```
+PowerShell:
+```powershell
+./scripts/run-dev.ps1
+```
+
+Production-like local run (Release publish + start):
+
+> Before running, set `Jwt__Key` environment variable.
+
+```bash
+Jwt__Key='replace-with-secure-key' ./scripts/run-prod.sh
+```
+PowerShell:
+```powershell
+$Env:Jwt__Key = 'replace-with-secure-key'
+./scripts/run-prod.ps1
+```
+
 ### Linting (Roslynator)
 Roslynator analyzers are connected to both projects and configured via `.editorconfig`.
 
