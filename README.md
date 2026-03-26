@@ -1,6 +1,6 @@
 # CarComparisonApp
 
-**CarComparisonApp** is a web application for comparing cars based on various specifications. 
+**CarComparisonApp** is a web application for comparing cars based on various specifications.
 
 ## Table of Contents
 - [Description](#description)
@@ -11,6 +11,7 @@
   - [Cloning the Repository](#cloning-the-repository)
   - [Configuration](#configuration)
   - [Running the Application](#running-the-application)
+- [Developer Onboarding (Fresh OS)](#developer-onboarding-fresh-os)
 - [API Endpoints](#api-endpoints)
 - [Project Structure](#project-structure)
 - [Documentation Standards](#documentation-standards)
@@ -161,6 +162,115 @@ Ignored by linting configuration:
 Detailed guides:
 - English: `docs/en/linting.md`
 - Українська: `docs/uk/linting.md`
+
+## Developer Onboarding (Fresh OS)
+
+A brief step-by-step guide for a developer with a fresh OS.
+
+### 1) Install required software
+
+Mandatory:
+- `Git`
+- `.NET SDK 8`
+
+Optional (if you will run the React client):
+- `Node.js` (LTS) + `npm`
+
+Verify:
+```bash
+git --version
+dotnet --version
+
+### 2) Clone the repository
+
+```bash
+git clone https://github.com/vxmotors/CarComparisonApp.git
+cd CarComparisonApp
+```
+
+### 3) Set up the development environment
+
+Recommended:
+- Visual Studio 2022 / Rider / VS Code (C# extension)
+
+The project already includes:
+- `Roslynator` (linting)
+- `pre-commit` hook (`.githooks/pre-commit`)
+- quality verification scripts (`scripts/verify.*`)
+
+Enable git hooks:
+```bash
+git config core.hooksPath .githooks
+```
+
+### 4) Install and restore dependencies
+
+```bash
+dotnet tool restore
+dotnet restore CarComparisonApi/CarComparisonApi.csproj
+dotnet restore CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
+```
+
+### 5) Database / storage
+
+**No database is required (already implemented in the project):
+- uses file‑based JSON storage in CarComparisonApi/Data/*.json.
+- no separate database creation or migration step.
+
+### 6) Configuration for running
+
+Set JWT environment variables (PowerShell example):
+```powershell
+$Env:Jwt__Key = 'a-very-long-random-secret-32-chars-or-more'
+$Env:Jwt__Issuer = 'CarComparisonApi'
+$Env:Jwt__Audience = 'CarComparisonApiUsers'
+```
+
+### 7) Run in development mode
+
+```bash
+dotnet run --project CarComparisonApi/CarComparisonApi.csproj
+```
+
+After startup:
+- API is available at the local URL shown in the console
+- Swagger UI: `<base-url>/swagger`
+
+### 8) Basic commands and operations
+
+Build:
+```bash
+dotnet build CarComparisonApi/CarComparisonApi.csproj --no-restore
+dotnet build CarComparisonApp.Tests/CarComparisonApp.Tests.csproj --no-restore
+```
+
+Tests:
+```bash
+dotnet test CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
+```
+
+Linting:
+```bash
+dotnet roslynator analyze CarComparisonApi/CarComparisonApi.csproj CarComparisonApp.Tests/CarComparisonApp.Tests.csproj
+```
+
+Full verification:
+```bash
+./scripts/verify.sh
+```
+PowerShell:
+```powershell
+./scripts/verify.ps1
+```
+
+Documentation:
+```bash
+./scripts/verify-docs.sh
+```
+PowerShell:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify-docs.ps1
+```
 
 ## Documentation Standards
 
