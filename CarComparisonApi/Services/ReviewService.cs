@@ -1,5 +1,7 @@
-using CarComparisonApi.Models;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+
+using CarComparisonApi.Models;
 
 namespace CarComparisonApi.Services
 {
@@ -10,6 +12,7 @@ namespace CarComparisonApi.Services
     {
         private readonly ICarService _carService;
         private readonly IAuthService _authService;
+        private readonly ILogger<ReviewService> _logger;
         private readonly string _reviewsFilePath;
         private List<Review> _reviews = new();
         private readonly object _lock = new();
@@ -20,10 +23,12 @@ namespace CarComparisonApi.Services
         /// <param name="environment">Host environment used to resolve review file path.</param>
         /// <param name="carService">Car catalog service for enrichment of review responses.</param>
         /// <param name="authService">Authentication service used to resolve user information.</param>
-        public ReviewService(IWebHostEnvironment environment, ICarService carService, IAuthService authService)
+        /// <param name="logger">Logger instance for review storage operations and failures.</param>
+        public ReviewService(IWebHostEnvironment environment, ICarService carService, IAuthService authService, ILogger<ReviewService> logger)
         {
             _carService = carService;
             _authService = authService;
+            _logger = logger;
             _reviewsFilePath = Path.Combine(environment.ContentRootPath, "Data", "reviews.json");
             LoadReviews();
         }
@@ -32,52 +37,71 @@ namespace CarComparisonApi.Services
         {
             lock (_lock)
             {
-                if (File.Exists(_reviewsFilePath))
+                try
                 {
-                    var json = File.ReadAllText(_reviewsFilePath);
-                    _reviews = JsonConvert.DeserializeObject<List<Review>>(json) ?? new List<Review>();
-                }
-                else
-                {
-                    _reviews = new List<Review>
+                    if (File.Exists(_reviewsFilePath))
                     {
-                        new Review
+                        var json = File.ReadAllText(_reviewsFilePath);
+                        _reviews = JsonConvert.DeserializeObject<List<Review>>(json) ?? new List<Review>();
+                        _logger.LogInformation("Reviews loaded from {ReviewsFilePath}. Count: {ReviewCount}", _reviewsFilePath, _reviews.Count);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Reviews file not found at {ReviewsFilePath}. Creating seed reviews.", _reviewsFilePath);
+                        _reviews = new List<Review>
                         {
-                            Id = 1,
-                            UserId = 1,
-                            TrimId = 1,
-                            Content = "Чудовий автомобіль, дуже задоволений покупкою! Комфорт на високому рівні.",
-                            Rating = 9,
-                            CreatedAt = DateTime.UtcNow.AddDays(-30)
-                        },
-                        new Review
-                        {
-                            Id = 2,
-                            UserId = 1,
-                            TrimId = 2,
-                            Content = "Потужний двигун, але велика витрата палива в місті.",
-                            Rating = 7,
-                            CreatedAt = DateTime.UtcNow.AddDays(-15)
-                        },
-                        new Review
-                        {
-                            Id = 3,
-                            UserId = 1,
-                            TrimId = 3,
-                            Content = "Надійний кросовер, ідеально підходить для сім'ї.",
-                            Rating = 8,
-                            CreatedAt = DateTime.UtcNow.AddDays(-10)
-                        }
-                    };
-                    SaveReviews();
+                            new Review
+                            {
+                                Id = 1,
+                                UserId = 1,
+                                TrimId = 1,
+                                Content = "Чудовий автомобіль, дуже задоволений покупкою! Комфорт на високому рівні.",
+                                Rating = 9,
+                                CreatedAt = DateTime.UtcNow.AddDays(-30)
+                            },
+                            new Review
+                            {
+                                Id = 2,
+                                UserId = 1,
+                                TrimId = 2,
+                                Content = "Потужний двигун, але велика витрата палива в місті.",
+                                Rating = 7,
+                                CreatedAt = DateTime.UtcNow.AddDays(-15)
+                            },
+                            new Review
+                            {
+                                Id = 3,
+                                UserId = 1,
+                                TrimId = 3,
+                                Content = "Надійний кросовер, ідеально підходить для сім'ї.",
+                                Rating = 8,
+                                CreatedAt = DateTime.UtcNow.AddDays(-10)
+                            }
+                        };
+                        SaveReviews();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to load reviews from {ReviewsFilePath}", _reviewsFilePath);
+                    throw;
                 }
             }
         }
 
         private void SaveReviews()
         {
-            var json = JsonConvert.SerializeObject(_reviews, Formatting.Indented);
-            File.WriteAllText(_reviewsFilePath, json);
+            try
+            {
+                var json = JsonConvert.SerializeObject(_reviews, Formatting.Indented);
+                File.WriteAllText(_reviewsFilePath, json);
+                _logger.LogDebug("Reviews saved to {ReviewsFilePath}. Count: {ReviewCount}", _reviewsFilePath, _reviews.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save reviews to {ReviewsFilePath}", _reviewsFilePath);
+                throw;
+            }
         }
 
         /// <summary>
@@ -117,12 +141,16 @@ namespace CarComparisonApi.Services
             lock (_lock)
             {
                 if (review.Rating < 1 || review.Rating > 10)
+                {
+                    _logger.LogWarning("Create review rejected due to invalid rating: {Rating}", review.Rating);
                     throw new ArgumentException("Рейтинг має бути в діапазоні від 1 до 10");
+                }
 
                 review.Id = _reviews.Count > 0 ? _reviews.Max(r => r.Id) + 1 : 1;
                 review.CreatedAt = DateTime.UtcNow;
                 _reviews.Add(review);
                 SaveReviews();
+                _logger.LogInformation("Review created. ReviewId: {ReviewId}, UserId: {UserId}, TrimId: {TrimId}", review.Id, review.UserId, review.TrimId);
                 return Task.FromResult(review);
             }
         }
@@ -141,12 +169,20 @@ namespace CarComparisonApi.Services
                 if (existingReview != null)
                 {
                     if (review.Rating < 1 || review.Rating > 10)
+                    {
+                        _logger.LogWarning("Update review rejected due to invalid rating: {Rating}. ReviewId: {ReviewId}", review.Rating, id);
                         throw new ArgumentException("Рейтинг має бути в діапазоні від 1 до 10");
+                    }
 
                     existingReview.Content = review.Content;
                     existingReview.Rating = review.Rating;
                     existingReview.UpdatedAt = DateTime.UtcNow;
                     SaveReviews();
+                    _logger.LogInformation("Review updated. ReviewId: {ReviewId}", id);
+                }
+                else
+                {
+                    _logger.LogWarning("Attempted to update non-existing review. ReviewId: {ReviewId}", id);
                 }
             }
 
@@ -166,6 +202,11 @@ namespace CarComparisonApi.Services
                 {
                     _reviews.Remove(review);
                     SaveReviews();
+                    _logger.LogInformation("Review deleted. ReviewId: {ReviewId}", id);
+                }
+                else
+                {
+                    _logger.LogWarning("Attempted to delete non-existing review. ReviewId: {ReviewId}", id);
                 }
             }
 

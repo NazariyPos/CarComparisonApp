@@ -1,11 +1,11 @@
 using CarComparisonApi.Models;
 using CarComparisonApi.Models.DTOs;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Newtonsoft.Json;
 
 namespace CarComparisonApi.Services
 {
@@ -20,16 +20,19 @@ namespace CarComparisonApi.Services
     {
         private readonly IConfiguration _configuration;
         private readonly IJsonUserService _userService;
+        private readonly ILogger<AuthService> _logger;
 
         /// <summary>
         /// Initializes authentication service dependencies.
         /// </summary>
         /// <param name="configuration">Application configuration with JWT settings.</param>
         /// <param name="userService">User storage service.</param>
-        public AuthService(IConfiguration configuration, IJsonUserService userService)
+        /// <param name="logger">Logger instance.</param>
+        public AuthService(IConfiguration configuration, IJsonUserService userService, ILogger<AuthService> logger)
         {
             _configuration = configuration;
             _userService = userService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -41,7 +44,10 @@ namespace CarComparisonApi.Services
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
             if (await _userService.UserExistsAsync(request.Login, request.Email))
+            {
+                _logger.LogWarning("Registration rejected for login/email already in use. Login: {Login}, Email: {Email}", request.Login, request.Email);
                 throw new Exception("Користувач з таким логіном або email вже існує");
+            }
 
             string username = await GenerateUniqueUsernameAsync();
 
@@ -58,6 +64,7 @@ namespace CarComparisonApi.Services
             await _userService.CreateUserAsync(user);
 
             var token = GenerateJwtToken(user);
+            _logger.LogInformation("User registered successfully. UserId: {UserId}, Login: {Login}", user.Id, user.Login);
 
             return new AuthResponse
             {
@@ -84,12 +91,16 @@ namespace CarComparisonApi.Services
         {
             var user = await _userService.GetUserByLoginOrEmailAsync(request.LoginOrEmail);
             if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
+            {
+                _logger.LogWarning("Failed login attempt for {LoginOrEmail}", request.LoginOrEmail);
                 throw new Exception("Неправильний логін або пароль");
+            }
 
             user.LastLogin = DateTime.UtcNow;
             await _userService.UpdateUserAsync(user);
 
             var token = GenerateJwtToken(user);
+            _logger.LogInformation("User logged in successfully. UserId: {UserId}, Login: {Login}", user.Id, user.Login);
 
             return new AuthResponse
             {
@@ -170,14 +181,13 @@ namespace CarComparisonApi.Services
         {
             try
             {
-                Console.WriteLine($"GetUserByIdAsync called with id: {id}");
                 var user = await _userService.GetUserByIdAsync(id);
-                Console.WriteLine($"User found: {user != null}");
+                _logger.LogDebug("Get user by id executed. UserId: {UserId}, Found: {IsFound}", id, user is not null);
                 return user;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in GetUserByIdAsync: {ex.Message}");
+                _logger.LogError(ex, "Error while getting user by id. UserId: {UserId}", id);
                 return null;
             }
         }
@@ -189,7 +199,17 @@ namespace CarComparisonApi.Services
         /// <returns>User instance or <c>null</c> if not found.</returns>
         public async Task<User?> GetUserByLoginAsync(string login)
         {
-            return await _userService.GetUserByLoginAsync(login);
+            try
+            {
+                var user = await _userService.GetUserByLoginAsync(login);
+                _logger.LogDebug("Get user by login executed. Login: {Login}, Found: {IsFound}", login, user is not null);
+                return user;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while getting user by login. Login: {Login}", login);
+                return null;
+            }
         }
     }
 }

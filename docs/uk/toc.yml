@@ -2,6 +2,8 @@
   href: index.md
 - name: Лінтинг і quality checks
   href: linting.md
+- name: Стратегія логування (Serilog)
+  href: logging.md
 - name: Генерація документації
   href: generate_docs.md
 - name: Архітектура та бізнес-логіка

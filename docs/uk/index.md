@@ -12,6 +12,7 @@
 ## Основні сторінки
 
 - `architecture.md` — архітектура, бізнес-логіка, взаємодія компонентів.
+- `logging.md` — стратегія логування на базі Serilog та карта рівнів логів.
 - `linting.md` — правила лінтингу та quality checks.
 - `generate_docs.md` — генерація Swagger + DocFX документації.
 - `test-driven-documentation.md` — «жива» документація на базі тестів.

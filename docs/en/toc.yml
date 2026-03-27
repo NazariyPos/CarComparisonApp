@@ -2,6 +2,8 @@
   href: index.md
 - name: Linting and Quality
   href: linting.md
+- name: Logging Strategy (Serilog)
+  href: logging.md
 - name: Generate Documentation
   href: generate_docs.md
 - name: Architecture and Business Logic

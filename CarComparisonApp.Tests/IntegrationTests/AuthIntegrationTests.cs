@@ -5,6 +5,7 @@ using CarComparisonApi.Services;
 using FakeItEasy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -107,8 +108,8 @@ namespace CarComparisonApp.Tests.IntegrationTests
                 });
             _configuration = configurationBuilder.Build();
 
-            _userService = new JsonUserService(_environment);
-            _authService = new AuthService(_configuration, _userService);
+            _userService = new JsonUserService(_environment, NullLogger<JsonUserService>.Instance);
+            _authService = new AuthService(_configuration, _userService, NullLogger<AuthService>.Instance);
             _authController = new AuthController(_authService);
 
             Console.WriteLine($"ContentRootPath: {_environment.ContentRootPath}");

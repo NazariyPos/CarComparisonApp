@@ -70,6 +70,7 @@ namespace CarComparisonApi.Services
     public class JsonUserService : IJsonUserService
     {
         private readonly string _usersFilePath;
+        private readonly ILogger<JsonUserService> _logger;
         private List<User> _users = new();
         private readonly object _lock = new();
 
@@ -77,9 +78,11 @@ namespace CarComparisonApi.Services
         /// Initializes JSON user storage.
         /// </summary>
         /// <param name="environment">Host environment used to resolve data file path.</param>
-        public JsonUserService(IWebHostEnvironment environment)
+        /// <param name="logger">Logger instance for storage diagnostics and errors.</param>
+        public JsonUserService(IWebHostEnvironment environment, ILogger<JsonUserService> logger)
         {
             _usersFilePath = Path.Combine(environment.ContentRootPath, "Data", "users.json");
+            _logger = logger;
             LoadUsers();
         }
 
@@ -87,35 +90,54 @@ namespace CarComparisonApi.Services
         {
             lock (_lock)
             {
-                if (File.Exists(_usersFilePath))
+                try
                 {
-                    var json = File.ReadAllText(_usersFilePath);
-                    _users = JsonConvert.DeserializeObject<List<User>>(json) ?? new List<User>();
-                }
-                else
-                {
-                    _users = new List<User>
+                    if (File.Exists(_usersFilePath))
                     {
-                        new User
+                        var json = File.ReadAllText(_usersFilePath);
+                        _users = JsonConvert.DeserializeObject<List<User>>(json) ?? new List<User>();
+                        _logger.LogInformation("Users loaded from {UsersFilePath}. Count: {UserCount}", _usersFilePath, _users.Count);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Users file not found at {UsersFilePath}. Creating default admin user.", _usersFilePath);
+                        _users = new List<User>
                         {
-                            Id = 1,
-                            Login = "admin",
-                            Username = "Admin",
-                            Email = "admin@example.com",
-                            PasswordHash = "PrP+ZrMeO00Q+nC1ytSccRIpSvauTkdqHEBRVdRaoSE=", // admin123
-                            IsAdmin = true,
-                            CreatedAt = DateTime.UtcNow
-                        }
-                    };
-                    SaveUsers();
+                            new User
+                            {
+                                Id = 1,
+                                Login = "admin",
+                                Username = "Admin",
+                                Email = "admin@example.com",
+                                PasswordHash = "PrP+ZrMeO00Q+nC1ytSccRIpSvauTkdqHEBRVdRaoSE=", // admin123
+                                IsAdmin = true,
+                                CreatedAt = DateTime.UtcNow
+                            }
+                        };
+                        SaveUsers();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to load users from {UsersFilePath}", _usersFilePath);
+                    throw;
                 }
             }
         }
 
         private void SaveUsers()
         {
-            var json = JsonConvert.SerializeObject(_users, Formatting.Indented);
-            File.WriteAllText(_usersFilePath, json);
+            try
+            {
+                var json = JsonConvert.SerializeObject(_users, Formatting.Indented);
+                File.WriteAllText(_usersFilePath, json);
+                _logger.LogDebug("Users saved to {UsersFilePath}. Count: {UserCount}", _usersFilePath, _users.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save users to {UsersFilePath}", _usersFilePath);
+                throw;
+            }
         }
 
         /// <summary>
@@ -195,6 +217,7 @@ namespace CarComparisonApi.Services
                 user.Id = _users.Count > 0 ? _users.Max(u => u.Id) + 1 : 1;
                 _users.Add(user);
                 SaveUsers();
+                _logger.LogInformation("User created. UserId: {UserId}, Login: {Login}", user.Id, user.Login);
                 return Task.CompletedTask;
             }
         }
@@ -213,6 +236,11 @@ namespace CarComparisonApi.Services
                     var index = _users.IndexOf(existingUser);
                     _users[index] = user;
                     SaveUsers();
+                    _logger.LogInformation("User updated. UserId: {UserId}", user.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("Attempted to update non-existing user. UserId: {UserId}", user.Id);
                 }
                 return Task.CompletedTask;
             }
@@ -231,6 +259,11 @@ namespace CarComparisonApi.Services
                 {
                     _users.Remove(user);
                     SaveUsers();
+                    _logger.LogInformation("User deleted. UserId: {UserId}", id);
+                }
+                else
+                {
+                    _logger.LogWarning("Attempted to delete non-existing user. UserId: {UserId}", id);
                 }
                 return Task.CompletedTask;
             }

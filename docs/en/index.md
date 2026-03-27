@@ -12,6 +12,7 @@ This site is generated with `DocFX`.
 ## Main pages
 
 - `architecture.md` — architecture decisions, business logic, complex algorithms, component interaction.
+- `logging.md` — Serilog-based logging strategy, levels, and integration points.
 - `linting.md` — linting rules and quality gates.
 - `generate_docs.md` — how to generate Swagger + DocFX documentation.
 - `test-driven-documentation.md` — executable usage examples based on unit tests.
