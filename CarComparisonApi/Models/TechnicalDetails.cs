@@ -7,6 +7,7 @@ namespace CarComparisonApi.Models
     {
         public int Id { get; set; }
         public int TrimId { get; set; }
+        public Trim? Trim { get; set; }
 
         public int? MaxSpeed { get; set; }
         public decimal? Acceleration0To100 { get; set; }

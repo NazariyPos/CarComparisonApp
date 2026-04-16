@@ -1,15 +1,14 @@
 using CarComparisonApi.Controllers;
+using CarComparisonApi.Data;
 using CarComparisonApi.Models;
 using CarComparisonApi.Models.DTOs;
 using CarComparisonApi.Services;
-using FakeItEasy;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -18,85 +17,19 @@ namespace CarComparisonApp.Tests.IntegrationTests
 {
     public class AuthIntegrationTests : IDisposable
     {
-        private readonly string _originalUsersFilePath;
-        private readonly string _backupUsersFilePath;
+        private readonly CarComparisonDbContext _dbContext;
         private readonly JsonUserService _userService;
         private readonly AuthService _authService;
         private readonly AuthController _authController;
-        private readonly IConfiguration _configuration;
-        private readonly IWebHostEnvironment _environment;
 
         public AuthIntegrationTests()
         {
-            _originalUsersFilePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", "CarComparisonApi", "Data", "users.json");
+            var dbOptions = new DbContextOptionsBuilder<CarComparisonDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
 
-            var usersDirectory = Path.GetDirectoryName(_originalUsersFilePath)
-                ?? throw new InvalidOperationException("Cannot determine users file directory.");
-            var projectRoot = Directory.GetParent(usersDirectory)?.FullName
-                ?? throw new InvalidOperationException("Cannot determine project root directory.");
-
-            Console.WriteLine($"Project root: {projectRoot}");
-            Console.WriteLine($"Original file path: {_originalUsersFilePath}");
-
-            _backupUsersFilePath = Path.Combine(Path.GetTempPath(), $"users_backup_{Guid.NewGuid()}.json");
-
-            if (File.Exists(_originalUsersFilePath))
-            {
-                File.Copy(_originalUsersFilePath, _backupUsersFilePath, true);
-
-                var originalContent = File.ReadAllText(_originalUsersFilePath);
-                var initialUsers = JsonConvert.DeserializeObject<List<User>>(originalContent) ?? new List<User>();
-
-                AddTestUsersIfNotExist(initialUsers, _originalUsersFilePath);
-            }
-            else
-            {
-                var initialUsers = new List<User>
-                {
-                    new User
-                    {
-                        Id = 1,
-                        Login = "admin",
-                        Username = "Admin",
-                        Email = "admin@example.com",
-                        PasswordHash = "PrP+ZrMeO00Q+nC1ytSccRIpSvauTkdqHEBRVdRaoSE=",
-                        IsAdmin = true,
-                        CreatedAt = DateTime.UtcNow
-                    },
-                    new User
-                    {
-                        Id = 2,
-                        Login = "testuser",
-                        Username = "TestUser",
-                        Email = "testmail@gmail.com",
-                        PasswordHash = "oQnjaUetVt4dyhzEnw74rJrZp7GqDfQfs8TLc8H/Aeo=",
-                        IsAdmin = false,
-                        RealName = "Тестовий Користувач",
-                        CreatedAt = DateTime.UtcNow
-                    },
-                    new User
-                    {
-                        Id = 3,
-                        Login = "testuser001",
-                        Username = "NewUser1",
-                        Email = "testuser001@example.com",
-                        PasswordHash = "y+51Iw1Eug2yDMO84NvIcuZpZn/ddeiNObtMaKvKF9Q=",
-                        IsAdmin = false,
-                        CreatedAt = DateTime.UtcNow
-                    }
-                };
-
-                var directory = Path.GetDirectoryName(_originalUsersFilePath);
-                if (!Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory!);
-                }
-
-                File.WriteAllText(_originalUsersFilePath, JsonConvert.SerializeObject(initialUsers, Formatting.Indented));
-            }
-
-            _environment = A.Fake<IWebHostEnvironment>();
-            A.CallTo(() => _environment.ContentRootPath).Returns(projectRoot);
+            _dbContext = new CarComparisonDbContext(dbOptions);
+            SeedUsers(_dbContext);
 
             var configurationBuilder = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?>
@@ -106,25 +39,27 @@ namespace CarComparisonApp.Tests.IntegrationTests
                     ["Jwt:Audience"] = "CarComparisonApiUsers",
                     ["Jwt:ExpireDays"] = "7"
                 });
-            _configuration = configurationBuilder.Build();
 
-            _userService = new JsonUserService(_environment, NullLogger<JsonUserService>.Instance);
-            _authService = new AuthService(_configuration, _userService, NullLogger<AuthService>.Instance);
+            var configuration = configurationBuilder.Build();
+            _userService = new JsonUserService(_dbContext, NullLogger<JsonUserService>.Instance);
+            _authService = new AuthService(configuration, _userService, NullLogger<AuthService>.Instance);
             _authController = new AuthController(_authService);
-
-            Console.WriteLine($"ContentRootPath: {_environment.ContentRootPath}");
-            Console.WriteLine($"Expected file path: {Path.Combine(_environment.ContentRootPath, "Data", "users.json")}");
         }
 
-        private static void AddTestUsersIfNotExist(List<User> existingUsers, string filePath)
+        private static void SeedUsers(CarComparisonDbContext dbContext)
         {
-            bool needsUpdate = false;
-
-            if (!existingUsers.Any(u => u.Email == "testmail@gmail.com"))
-            {
-                var testUser = new User
+            dbContext.Users.AddRange(
+                new User
                 {
-                    Id = existingUsers.Count > 0 ? existingUsers.Max(u => u.Id) + 1 : 1,
+                    Login = "admin",
+                    Username = "Admin",
+                    Email = "admin@example.com",
+                    PasswordHash = "PrP+ZrMeO00Q+nC1ytSccRIpSvauTkdqHEBRVdRaoSE=",
+                    IsAdmin = true,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new User
+                {
                     Login = "testuser",
                     Username = "TestUser",
                     Email = "testmail@gmail.com",
@@ -132,51 +67,25 @@ namespace CarComparisonApp.Tests.IntegrationTests
                     IsAdmin = false,
                     RealName = "Тестовий Користувач",
                     CreatedAt = DateTime.UtcNow
-                };
-                existingUsers.Add(testUser);
-                needsUpdate = true;
-            }
-
-            if (!existingUsers.Any(u => u.Login == "admin"))
-            {
-                var adminUser = new User
+                },
+                new User
                 {
-                    Id = existingUsers.Count > 0 ? existingUsers.Max(u => u.Id) + 1 : 1,
-                    Login = "admin",
-                    Username = "Admin",
-                    Email = "admin@example.com",
-                    PasswordHash = "PrP+ZrMeO00Q+nC1ytSccRIpSvauTkdqHEBRVdRaoSE=",
-                    IsAdmin = true,
+                    Login = "testuser001",
+                    Username = "NewUser1",
+                    Email = "testuser001@example.com",
+                    PasswordHash = "y+51Iw1Eug2yDMO84NvIcuZpZn/ddeiNObtMaKvKF9Q=",
+                    IsAdmin = false,
                     CreatedAt = DateTime.UtcNow
-                };
-                existingUsers.Add(adminUser);
-                needsUpdate = true;
-            }
+                });
 
-            if (needsUpdate)
-            {
-                File.WriteAllText(filePath, JsonConvert.SerializeObject(existingUsers, Formatting.Indented));
-            }
+            dbContext.SaveChanges();
         }
 
         public void Dispose()
         {
-            try
-            {
-                if (File.Exists(_backupUsersFilePath))
-                {
-                    File.Copy(_backupUsersFilePath, _originalUsersFilePath, true);
-                    File.Delete(_backupUsersFilePath);
-                }
-            }
-            catch (IOException ex)
-            {
-                Console.WriteLine($"Помилка при відновленні файлу: {ex.Message}");
-            }
-            finally
-            {
-                GC.SuppressFinalize(this);
-            }
+            _dbContext.Database.EnsureDeleted();
+            _dbContext.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         [Fact]

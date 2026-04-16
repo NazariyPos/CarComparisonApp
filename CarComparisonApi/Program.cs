@@ -1,5 +1,7 @@
+using CarComparisonApi.Data;
 using CarComparisonApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -22,6 +24,9 @@ try
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
         .WriteTo.Console(outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] ({SourceContext}) {Message:lj}{NewLine}{Exception}"));
+
+    builder.Services.AddDbContext<CarComparisonDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     builder.Services.AddScoped<IJsonUserService, JsonUserService>();
     builder.Services.AddScoped<IAuthService, AuthService>();
@@ -84,6 +89,14 @@ try
     });
 
     var app = builder.Build();
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<CarComparisonDbContext>();
+        var environment = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseSeeder");
+        await DatabaseSeeder.SeedAsync(dbContext, environment, logger);
+    }
 
     app.Lifetime.ApplicationStarted.Register(() => Log.Information("CarComparisonApi started"));
     app.Lifetime.ApplicationStopping.Register(() => Log.Warning("CarComparisonApi is stopping"));
