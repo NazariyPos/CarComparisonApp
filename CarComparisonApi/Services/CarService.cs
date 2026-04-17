@@ -24,6 +24,10 @@ namespace CarComparisonApi.Services
             return await _dbContext.CarBrands
                 .Include(b => b.Models)
                     .ThenInclude(m => m.Generations)
+                        .ThenInclude(g => g.Variants)
+                            .ThenInclude(v => v.Images)
+                .Include(b => b.Models)
+                    .ThenInclude(m => m.Generations)
                         .ThenInclude(g => g.Trims)
                             .ThenInclude(t => t.TechnicalDetails)
                 .AsNoTracking()
@@ -33,6 +37,10 @@ namespace CarComparisonApi.Services
         public async Task<CarBrand?> GetBrandByIdAsync(int id)
         {
             return await _dbContext.CarBrands
+                .Include(b => b.Models)
+                    .ThenInclude(m => m.Generations)
+                        .ThenInclude(g => g.Variants)
+                            .ThenInclude(v => v.Images)
                 .Include(b => b.Models)
                     .ThenInclude(m => m.Generations)
                         .ThenInclude(g => g.Trims)
@@ -46,6 +54,8 @@ namespace CarComparisonApi.Services
             var generation = await _dbContext.Generations
                 .Include(g => g.Model)
                     .ThenInclude(m => m!.Brand)
+                .Include(g => g.Variants)
+                    .ThenInclude(v => v.Images)
                 .Include(g => g.Trims)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(g => g.Id == generationId);
@@ -61,7 +71,38 @@ namespace CarComparisonApi.Services
                 Name = generation.Name,
                 YearFrom = generation.YearFrom,
                 YearTo = generation.YearTo,
-                PhotoUrl = generation.PhotoUrl,
+                PhotoUrl = generation.Variants
+                    .OrderByDescending(v => v.IsDefault)
+                    .Select(v => v.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? v.PhotoUrl)
+                    .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u))
+                    ?? generation.PhotoUrl,
+                Variants = generation.Variants
+                    .OrderBy(v => v.YearFrom)
+                    .Select(v => new GenerationVariantDto
+                    {
+                        Id = v.Id,
+                        Name = v.Name,
+                        VariantType = v.VariantType.ToString(),
+                        YearFrom = v.YearFrom,
+                        YearTo = v.YearTo,
+                        IsDefault = v.IsDefault,
+                        PhotoUrl = v.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? v.PhotoUrl,
+                        Images = v.Images
+                            .OrderByDescending(i => i.IsPrimary)
+                            .ThenBy(i => i.SortOrder)
+                            .ThenBy(i => i.Id)
+                            .Select(i => new GenerationImageDto
+                            {
+                                Id = i.Id,
+                                GenerationVariantId = i.GenerationVariantId,
+                                Url = i.Url,
+                                IsPrimary = i.IsPrimary,
+                                SortOrder = i.SortOrder,
+                                CreatedAt = i.CreatedAt
+                            })
+                            .ToList()
+                    })
+                    .ToList(),
                 Brand = new BrandDto
                 {
                     Id = generation.Model.Brand.Id,
@@ -90,6 +131,9 @@ namespace CarComparisonApi.Services
             var trim = await _dbContext.Trims
                 .Include(t => t.TechnicalDetails)
                 .Include(t => t.Generation)
+                    .ThenInclude(g => g!.Variants)
+                        .ThenInclude(v => v.Images)
+                .Include(t => t.Generation)
                     .ThenInclude(g => g!.Model)
                         .ThenInclude(m => m!.Brand)
                 .AsNoTracking()
@@ -113,7 +157,11 @@ namespace CarComparisonApi.Services
                     Name = trim.Generation.Name,
                     YearFrom = trim.Generation.YearFrom,
                     YearTo = trim.Generation.YearTo,
-                    PhotoUrl = trim.Generation.PhotoUrl
+                    PhotoUrl = trim.Generation.Variants
+                        .OrderByDescending(v => v.IsDefault)
+                        .Select(v => v.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? v.PhotoUrl)
+                        .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u))
+                        ?? trim.Generation.PhotoUrl
                 },
                 Model = new ModelBasicDto
                 {
@@ -141,6 +189,10 @@ namespace CarComparisonApi.Services
             string? fuelType = null)
         {
             var carData = await _dbContext.CarBrands
+                .Include(b => b.Models)
+                    .ThenInclude(m => m.Generations)
+                        .ThenInclude(g => g.Variants)
+                            .ThenInclude(v => v.Images)
                 .Include(b => b.Models)
                     .ThenInclude(m => m.Generations)
                         .ThenInclude(g => g.Trims)
@@ -225,7 +277,11 @@ namespace CarComparisonApi.Services
                             BodyType = modelItem.BodyType ?? string.Empty,
                             YearFrom = genItem.YearFrom,
                             YearTo = genItem.YearTo,
-                            PhotoUrl = genItem.PhotoUrl,
+                            PhotoUrl = genItem.Variants
+                                .OrderByDescending(v => v.IsDefault)
+                                .Select(v => v.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? v.PhotoUrl)
+                                .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u))
+                                ?? genItem.PhotoUrl,
                             TrimCount = trimsList.Count
                         });
                     }
@@ -260,6 +316,8 @@ namespace CarComparisonApi.Services
         {
             return await _dbContext.Generations
                 .Where(g => g.ModelId == modelId)
+                .Include(g => g.Variants)
+                    .ThenInclude(v => v.Images)
                 .Include(g => g.Trims)
                     .ThenInclude(t => t.TechnicalDetails)
                 .AsNoTracking()
@@ -269,6 +327,8 @@ namespace CarComparisonApi.Services
         public async Task<Generation?> GetGenerationByIdAsync(int id)
         {
             return await _dbContext.Generations
+                .Include(g => g.Variants)
+                    .ThenInclude(v => v.Images)
                 .Include(g => g.Trims)
                     .ThenInclude(t => t.TechnicalDetails)
                 .AsNoTracking()
@@ -311,6 +371,10 @@ namespace CarComparisonApi.Services
             string? fuelType = null)
         {
             var data = await _dbContext.CarBrands
+                .Include(b => b.Models)
+                    .ThenInclude(m => m.Generations)
+                        .ThenInclude(g => g.Variants)
+                            .ThenInclude(v => v.Images)
                 .Include(b => b.Models)
                     .ThenInclude(m => m.Generations)
                         .ThenInclude(g => g.Trims)
@@ -393,7 +457,11 @@ namespace CarComparisonApi.Services
                             ModelId = genItem.ModelId,
                             YearFrom = genItem.YearFrom,
                             YearTo = genItem.YearTo,
-                            PhotoUrl = genItem.PhotoUrl,
+                            PhotoUrl = genItem.Variants
+                                .OrderByDescending(v => v.IsDefault)
+                                .Select(v => v.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? v.PhotoUrl)
+                                .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u))
+                                ?? genItem.PhotoUrl,
                             Trims = trimsList.ConvertAll(t => new Trim
                             {
                                 Id = t.Id,

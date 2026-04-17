@@ -12,6 +12,7 @@ namespace CarComparisonApi.Models
         public int YearFrom { get; set; }
         public int YearTo { get; set; }
         public string? PhotoUrl { get; set; } = string.Empty;
+        public List<GenerationVariant> Variants { get; set; } = new();
         public List<Trim> Trims { get; set; } = new();
     }
 }

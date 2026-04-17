@@ -12,6 +12,7 @@ namespace CarComparisonApi.Models.DTOs
         public int YearFrom { get; set; }
         public int YearTo { get; set; }
         public string? PhotoUrl { get; set; }
+        public List<GenerationVariantDto> Variants { get; set; } = new();
 
         public BrandDto Brand { get; set; } = new();
         public ModelDto Model { get; set; } = new();

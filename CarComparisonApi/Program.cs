@@ -3,6 +3,7 @@ using CarComparisonApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Serilog;
@@ -32,6 +33,7 @@ try
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<ICarService, CarService>();
     builder.Services.AddScoped<IReviewService, ReviewService>();
+    builder.Services.AddScoped<IGenerationImageService, GenerationImageService>();
 
     builder.Services.AddControllers()
         .AddNewtonsoftJson(options =>
@@ -49,6 +51,31 @@ try
     builder.Services.AddSwaggerGen(options =>
     {
         options.EnableAnnotations();
+
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+            Name = "Authorization",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT"
+        });
+
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
 
         var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
         var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
@@ -105,6 +132,7 @@ try
     app.UseSerilogRequestLogging();
 
     app.UseCors("AllowAll");
+    app.UseStaticFiles();
     app.UseHttpsRedirection();
 
     app.UseSwagger();
