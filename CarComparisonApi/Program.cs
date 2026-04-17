@@ -34,6 +34,7 @@ try
     builder.Services.AddScoped<ICarService, CarService>();
     builder.Services.AddScoped<IReviewService, ReviewService>();
     builder.Services.AddScoped<IGenerationImageService, GenerationImageService>();
+    builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 
     builder.Services.AddControllers()
         .AddNewtonsoftJson(options =>
