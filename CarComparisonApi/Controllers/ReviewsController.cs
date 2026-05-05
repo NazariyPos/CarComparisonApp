@@ -166,32 +166,22 @@ namespace CarComparisonApi.Controllers
             var result = new List<object>();
             foreach (var review in reviews)
             {
-                var trim = await _carService.GetTrimByIdAsync(review.TrimId);
-                if (trim != null)
+                var trimDetails = await _carService.GetTrimFullDetailsAsync(review.TrimId);
+                if (trimDetails == null)
                 {
-                    var generation = await _carService.GetGenerationByIdAsync(trim.GenerationId);
-                    if (generation != null)
-                    {
-                        var model = await _carService.GetModelByIdAsync(generation.ModelId);
-                        if (model != null)
-                        {
-                            var brand = await _carService.GetBrandByIdAsync(model.BrandId);
-                            if (brand != null)
-                            {
-                                var user = await _authService.GetUserByIdAsync(review.UserId);
-                                result.Add(new
-                                {
-                                    Review = review,
-                                    Username = user?.Username ?? "Невідомий",
-                                    Model = model.Name,
-                                    Generation = generation.Name,
-                                    Trim = trim.Name,
-                                    Brand = brand.Name
-                                });
-                            }
-                        }
-                    }
+                    continue;
                 }
+
+                var user = await _authService.GetUserByIdAsync(review.UserId);
+                result.Add(new
+                {
+                    Review = review,
+                    Username = user?.Username ?? "Невідомий",
+                    Model = trimDetails.Model.Name,
+                    Generation = trimDetails.Generation.Name,
+                    Trim = trimDetails.Name,
+                    Brand = trimDetails.Brand.Name
+                });
             }
 
             return Ok(result);

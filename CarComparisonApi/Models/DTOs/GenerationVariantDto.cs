@@ -6,8 +6,12 @@ namespace CarComparisonApi.Models.DTOs
     public class GenerationVariantDto
     {
         public int Id { get; set; }
+        public int GenerationId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string VariantType { get; set; } = string.Empty;
+        public int BodyStyleId { get; set; }
+        public string BodyStyleName { get; set; } = string.Empty;
+        public int DoorsCount { get; set; }
         public int YearFrom { get; set; }
         public int YearTo { get; set; }
         public bool IsDefault { get; set; }

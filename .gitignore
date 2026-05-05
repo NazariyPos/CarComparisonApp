@@ -21,13 +21,6 @@ CarComparisonApi/CarComparisonApi.http
 
 CarComparisonApi/Data/
 
-carcomparisonclient/
-carcomparisonclient/node_modules/
-carcomparisonclient/dist/
-carcomparisonclient/.env
-carcomparisonclient/.vite/
-carcomparisonclient/.cache/
-
 .env
 .env.*.local
 secret-*.json

@@ -4,8 +4,4 @@
   </Folder>
   <Project Path="CarComparisonApi/CarComparisonApi.csproj" />
   <Project Path="CarComparisonApp.Tests/CarComparisonApp.Tests.csproj" Id="e4339082-b124-458a-9d5e-4a385cdeb82b" />
-  <Project Path="CarComparisonClient/carcomparisonclient.esproj">
-    <Build />
-    <Deploy Solution="Release|*" />
-  </Project>
 </Solution>

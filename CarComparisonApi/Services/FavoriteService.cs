@@ -24,19 +24,19 @@ namespace CarComparisonApi.Services
             var favorites = await _dbContext.Favorites
                 .Where(f => f.UserId == userId)
                 .Include(f => f.Trim)
-                    .ThenInclude(t => t!.Generation)
-                        .ThenInclude(g => g!.Variants)
-                            .ThenInclude(v => v.Images)
+                    .ThenInclude(t => t!.GenerationVariant)
+                        .ThenInclude(v => v!.Images)
                 .Include(f => f.Trim)
-                    .ThenInclude(t => t!.Generation)
-                        .ThenInclude(g => g!.Model)
-                            .ThenInclude(m => m!.Brand)
+                    .ThenInclude(t => t!.GenerationVariant)
+                        .ThenInclude(v => v!.Generation)
+                            .ThenInclude(g => g!.Model)
+                                .ThenInclude(m => m!.Brand)
                 .OrderByDescending(f => f.AddedAt)
                 .AsNoTracking()
                 .ToListAsync();
 
             return favorites
-                .Where(f => f.Trim?.Generation?.Model?.Brand != null)
+                .Where(f => f.Trim?.GenerationVariant?.Generation?.Model?.Brand != null)
                 .Select(MapToDto)
                 .ToList();
         }
@@ -69,17 +69,19 @@ namespace CarComparisonApi.Services
             var favorite = await _dbContext.Favorites
                 .Where(f => f.Id == existing.Id)
                 .Include(f => f.Trim)
-                    .ThenInclude(t => t!.Generation)
-                        .ThenInclude(g => g!.Variants)
-                            .ThenInclude(v => v.Images)
+                    .ThenInclude(t => t!.GenerationVariant)
+                        .ThenInclude(v => v!.Images)
                 .Include(f => f.Trim)
-                    .ThenInclude(t => t!.Generation)
-                        .ThenInclude(g => g!.Model)
-                            .ThenInclude(m => m!.Brand)
+                    .ThenInclude(t => t!.GenerationVariant)
+                        .ThenInclude(v => v!.Generation)
+                            .ThenInclude(g => g!.Model)
+                                .ThenInclude(m => m!.Brand)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
 
-            return favorite?.Trim?.Generation?.Model?.Brand == null ? null : MapToDto(favorite);
+            return favorite?.Trim?.GenerationVariant?.Generation?.Model?.Brand == null
+                ? null
+                : MapToDto(favorite);
         }
 
         public async Task<bool> RemoveFavoriteAsync(int userId, int trimId)
@@ -107,14 +109,13 @@ namespace CarComparisonApi.Services
         private static FavoriteDto MapToDto(Favorite favorite)
         {
             var trim = favorite.Trim!;
-            var generation = trim.Generation!;
+            var variant = trim.GenerationVariant!;
+            var generation = variant.Generation!;
             var model = generation.Model!;
             var brand = model.Brand!;
 
-            var photoUrl = generation.Variants
-                .OrderByDescending(v => v.IsDefault)
-                .Select(v => v.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? v.PhotoUrl)
-                .FirstOrDefault(url => !string.IsNullOrWhiteSpace(url))
+            var photoUrl = variant.Images.FirstOrDefault(i => i.IsPrimary)?.Url
+                ?? variant.PhotoUrl
                 ?? generation.PhotoUrl;
 
             return new FavoriteDto

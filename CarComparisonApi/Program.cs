@@ -35,6 +35,7 @@ try
     builder.Services.AddScoped<IReviewService, ReviewService>();
     builder.Services.AddScoped<IGenerationImageService, GenerationImageService>();
     builder.Services.AddScoped<IFavoriteService, FavoriteService>();
+    builder.Services.AddScoped<ISearchCarsProjectionService, SearchCarsProjectionService>();
 
     builder.Services.AddControllers()
         .AddNewtonsoftJson(options =>
@@ -121,9 +122,10 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<CarComparisonDbContext>();
-        var environment = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseSeeder");
-        await DatabaseSeeder.SeedAsync(dbContext, environment, logger);
+        var searchCarsProjectionService = scope.ServiceProvider.GetRequiredService<ISearchCarsProjectionService>();
+        await DatabaseSeeder.SeedAsync(dbContext, searchCarsProjectionService, logger);
+        await searchCarsProjectionService.RebuildAsync();
     }
 
     app.Lifetime.ApplicationStarted.Register(() => Log.Information("CarComparisonApi started"));

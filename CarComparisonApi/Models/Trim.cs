@@ -1,14 +1,14 @@
 namespace CarComparisonApi.Models
 {
     /// <summary>
-    /// Represents a trim level for a specific generation.
+    /// Represents a trim level for a specific generation variant.
     /// </summary>
     public class Trim
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public int GenerationId { get; set; }
-        public Generation? Generation { get; set; }
+        public int GenerationVariantId { get; set; }
+        public GenerationVariant? GenerationVariant { get; set; }
         public string? TransmissionType { get; set; }
         public int? DoorsCount { get; set; }
         public int? SeatsCount { get; set; }

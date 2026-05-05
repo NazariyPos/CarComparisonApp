@@ -70,10 +70,10 @@ namespace CarComparisonApp.Tests.Documentation
                 }
             };
 
-            A.CallTo(() => carService.GetGenerationCardsAsync("Toyota", "Camry", null, null, null, null, null, null))
+            A.CallTo(() => carService.GetGenerationCardsAsync("Toyota", "Camry", null, null, null, null, null, null, null, null, null, null, null))
                 .Returns(Task.FromResult(cards.AsEnumerable()));
 
-            var result = await controller.Search("Toyota", "Camry", null, null, null, null, null, null);
+            var result = await controller.Search("Toyota", "Camry", null, null, null, null, null, null, null, null, null, null, null);
 
             var ok = Assert.IsType<OkObjectResult>(result);
             var payload = Assert.IsAssignableFrom<IEnumerable<GenerationCardDto>>(ok.Value);

@@ -29,9 +29,14 @@ namespace CarComparisonApp.Tests.Controller
                 generation: null,
                 minYear: null,
                 maxYear: null,
-                bodyType: null,
+                bodyStyleId: null,
+                variantType: null,
                 transmission: null,
-                fuelType: null);
+                fuelType: null,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -62,9 +67,14 @@ namespace CarComparisonApp.Tests.Controller
                 generation: "XV70",
                 minYear: null,
                 maxYear: null,
-                bodyType: null,
+                bodyStyleId: null,
+                variantType: null,
                 transmission: null,
-                fuelType: null);
+                fuelType: null,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -88,9 +98,14 @@ namespace CarComparisonApp.Tests.Controller
                 generation: "XV70",
                 minYear: null,
                 maxYear: null,
-                bodyType: null,
+                bodyStyleId: null,
+                variantType: null,
                 transmission: null,
-                fuelType: null);
+                fuelType: null,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -114,9 +129,14 @@ namespace CarComparisonApp.Tests.Controller
                 generation: null,
                 minYear: 2020,
                 maxYear: 2010,
-                bodyType: null,
+                bodyStyleId: null,
+                variantType: null,
                 transmission: null,
-                fuelType: null);
+                fuelType: null,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -140,9 +160,14 @@ namespace CarComparisonApp.Tests.Controller
                 generation: null,
                 minYear: 1899,
                 maxYear: null,
-                bodyType: null,
+                bodyStyleId: null,
+                variantType: null,
                 transmission: null,
-                fuelType: null);
+                fuelType: null,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -166,9 +191,14 @@ namespace CarComparisonApp.Tests.Controller
                 generation: null,
                 minYear: null,
                 maxYear: DateTime.Now.Year + 2,
-                bodyType: null,
+                bodyStyleId: null,
+                variantType: null,
                 transmission: null,
-                fuelType: null);
+                fuelType: null,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -191,7 +221,7 @@ namespace CarComparisonApp.Tests.Controller
 
             var emptyResult = Enumerable.Empty<GenerationCardDto>();
             A.CallTo(() => _mockCarService.GetGenerationCardsAsync(
-                brand, model, null, null, null, null, null, null))
+                brand, model, null, null, null, null, null, null, null, null, null, null, null))
                 .Returns(Task.FromResult(emptyResult));
 
             // Act
@@ -201,9 +231,14 @@ namespace CarComparisonApp.Tests.Controller
                 generation: null,
                 minYear: null,
                 maxYear: null,
-                bodyType: null,
+                bodyStyleId: null,
+                variantType: null,
                 transmission: null,
-                fuelType: null);
+                fuelType: null,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
@@ -259,7 +294,7 @@ namespace CarComparisonApp.Tests.Controller
             };
 
             A.CallTo(() => _mockCarService.GetGenerationCardsAsync(
-                brand, model, null, null, null, null, null, null))
+                brand, model, null, null, null, null, null, null, null, null, null, null, null))
                 .Returns(Task.FromResult(expectedData.AsEnumerable()));
 
             // Act
@@ -269,9 +304,14 @@ namespace CarComparisonApp.Tests.Controller
                 generation: null,
                 minYear: null,
                 maxYear: null,
-                bodyType: null,
+                bodyStyleId: null,
+                variantType: null,
                 transmission: null,
-                fuelType: null);
+                fuelType: null,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -286,7 +326,7 @@ namespace CarComparisonApp.Tests.Controller
             Assert.Equal("XV70", dataList[0].GenerationName);
 
             A.CallTo(() => _mockCarService.GetGenerationCardsAsync(
-                brand, model, null, null, null, null, null, null))
+                brand, model, null, null, null, null, null, null, null, null, null, null, null))
                 .MustHaveHappenedOnceExactly();
         }
 
@@ -297,7 +337,7 @@ namespace CarComparisonApp.Tests.Controller
             const string brand = "Toyota";
 
             A.CallTo(() => _mockCarService.GetGenerationCardsAsync(
-                brand, null, null, null, null, null, null, null))
+                brand, null, null, null, null, null, null, null, null, null, null, null, null))
                 .ThrowsAsync(new Exception("Database connection failed"));
 
             // Act
@@ -307,9 +347,14 @@ namespace CarComparisonApp.Tests.Controller
                 generation: null,
                 minYear: null,
                 maxYear: null,
-                bodyType: null,
+                bodyStyleId: null,
+                variantType: null,
                 transmission: null,
-                fuelType: null);
+                fuelType: null,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             var statusCodeResult = Assert.IsType<ObjectResult>(result);
@@ -340,7 +385,7 @@ namespace CarComparisonApp.Tests.Controller
             const string generation = "XV70";
             const int minYear = 2015;
             const int maxYear = 2020;
-            const string bodyType = "Седан";
+            const int bodyStyleId = 1;
             const string transmission = "Автомат";
             const string fuelType = "Бензин";
 
@@ -350,7 +395,7 @@ namespace CarComparisonApp.Tests.Controller
             };
 
             A.CallTo(() => _mockCarService.GetGenerationCardsAsync(
-                brand, model, generation, minYear, maxYear, bodyType, transmission, fuelType))
+                brand, model, generation, minYear, maxYear, bodyStyleId, null, transmission, fuelType, null, null, null, null))
                 .Returns(Task.FromResult(expectedData.AsEnumerable()));
 
             // Act
@@ -360,15 +405,19 @@ namespace CarComparisonApp.Tests.Controller
                 generation: generation,
                 minYear: minYear,
                 maxYear: maxYear,
-                bodyType: bodyType,
+                bodyStyleId: bodyStyleId, variantType: null,
                 transmission: transmission,
-                fuelType: fuelType);
+                fuelType: fuelType,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             Assert.IsType<OkObjectResult>(result);
 
             A.CallTo(() => _mockCarService.GetGenerationCardsAsync(
-                brand, model, generation, minYear, maxYear, bodyType, transmission, fuelType))
+                brand, model, generation, minYear, maxYear, bodyStyleId, null, transmission, fuelType, null, null, null, null))
                 .MustHaveHappenedOnceExactly();
         }
 
@@ -383,7 +432,7 @@ namespace CarComparisonApp.Tests.Controller
             };
 
             A.CallTo(() => _mockCarService.GetGenerationCardsAsync(
-                null, null, null, null, null, null, null, null))
+                null, null, null, null, null, null, null, null, null, null, null, null, null))
                 .Returns(Task.FromResult(expectedData.AsEnumerable()));
 
             // Act
@@ -393,9 +442,14 @@ namespace CarComparisonApp.Tests.Controller
                 generation: null,
                 minYear: null,
                 maxYear: null,
-                bodyType: null,
+                bodyStyleId: null,
+                variantType: null,
                 transmission: null,
-                fuelType: null);
+                fuelType: null,
+                brandId: null,
+                modelId: null,
+                generationId: null,
+                generationVariantId: null);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);

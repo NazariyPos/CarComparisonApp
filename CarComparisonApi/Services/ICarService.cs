@@ -43,6 +43,13 @@ namespace CarComparisonApi.Services
         Task<IEnumerable<Generation>> GetGenerationsByModelIdAsync(int modelId);
 
         /// <summary>
+        /// Returns all generation variants for the specified model.
+        /// </summary>
+        /// <param name="modelId">Model identifier.</param>
+        /// <returns>Collection of generation variants.</returns>
+        Task<IEnumerable<GenerationVariantDto>> GetGenerationVariantsByModelIdAsync(int modelId);
+
+        /// <summary>
         /// Returns a generation by identifier.
         /// </summary>
         /// <param name="id">Generation identifier.</param>
@@ -55,6 +62,13 @@ namespace CarComparisonApi.Services
         /// <param name="generationId">Generation identifier.</param>
         /// <returns>Collection of trims.</returns>
         Task<IEnumerable<Trim>> GetTrimsByGenerationIdAsync(int generationId);
+
+        /// <summary>
+        /// Returns all trims for the specified generation variant.
+        /// </summary>
+        /// <param name="generationVariantId">Generation variant identifier.</param>
+        /// <returns>Collection of trims.</returns>
+        Task<IEnumerable<Trim>> GetTrimsByGenerationVariantIdAsync(int generationVariantId);
 
         /// <summary>
         /// Returns a trim by identifier.
@@ -78,7 +92,8 @@ namespace CarComparisonApi.Services
         /// <param name="generation">Optional generation filter.</param>
         /// <param name="minYear">Optional minimum year filter.</param>
         /// <param name="maxYear">Optional maximum year filter.</param>
-        /// <param name="bodyType">Optional body type filter.</param>
+        /// <param name="bodyStyleId">Optional body style identifier filter.</param>
+        /// <param name="variantType">Optional variant type filter.</param>
         /// <param name="transmission">Optional transmission filter.</param>
         /// <param name="fuelType">Optional fuel type filter.</param>
         /// <returns>Filtered hierarchy of brands/models/generations/trims.</returns>
@@ -88,7 +103,8 @@ namespace CarComparisonApi.Services
             string? generation = null,
             int? minYear = null,
             int? maxYear = null,
-            string? bodyType = null,
+            int? bodyStyleId = null,
+            GenerationVariantType? variantType = null,
             string? transmission = null,
             string? fuelType = null);
 
@@ -100,19 +116,51 @@ namespace CarComparisonApi.Services
         /// <param name="generation">Optional generation filter.</param>
         /// <param name="minYear">Optional minimum year filter.</param>
         /// <param name="maxYear">Optional maximum year filter.</param>
-        /// <param name="bodyType">Optional body type filter.</param>
+        /// <param name="bodyStyleId">Optional body style identifier filter.</param>
+        /// <param name="variantType">Optional variant type filter.</param>
         /// <param name="transmission">Optional transmission filter.</param>
         /// <param name="fuelType">Optional fuel type filter.</param>
+        /// <param name="brandId">Optional brand identifier filter.</param>
+        /// <param name="modelId">Optional model identifier filter.</param>
+        /// <param name="generationId">Optional generation identifier filter.</param>
+        /// <param name="generationVariantId">Optional generation variant identifier filter.</param>
         /// <returns>Collection of generation card DTOs.</returns>
         Task<IEnumerable<GenerationCardDto>> GetGenerationCardsAsync(
-            string? brand = null,
-            string? model = null,
-            string? generation = null,
-            int? minYear = null,
-            int? maxYear = null,
-            string? bodyType = null,
-            string? transmission = null,
-            string? fuelType = null);
+            string? brand,
+            string? model,
+            string? generation,
+            int? minYear,
+            int? maxYear,
+            int? bodyStyleId,
+            GenerationVariantType? variantType,
+            string? transmission,
+            string? fuelType,
+            int? brandId = null,
+            int? modelId = null,
+            int? generationId = null,
+            int? generationVariantId = null);
+
+        /// <summary>
+        /// Returns aggregated available filter options for search UI.
+        /// </summary>
+        /// <param name="brand">Optional brand filter.</param>
+        /// <param name="model">Optional model filter.</param>
+        /// <param name="generation">Optional generation filter.</param>
+        /// <param name="minYear">Optional minimum year filter.</param>
+        /// <param name="maxYear">Optional maximum year filter.</param>
+        /// <param name="brandId">Optional brand identifier filter.</param>
+        /// <param name="modelId">Optional model identifier filter.</param>
+        /// <param name="generationId">Optional generation identifier filter.</param>
+        /// <returns>Available filter option sets.</returns>
+        Task<SearchFacetsDto> GetSearchFacetsAsync(
+            string? brand,
+            string? model,
+            string? generation,
+            int? minYear,
+            int? maxYear,
+            int? brandId = null,
+            int? modelId = null,
+            int? generationId = null);
 
         /// <summary>
         /// Returns generation details including trims.
@@ -120,6 +168,13 @@ namespace CarComparisonApi.Services
         /// <param name="generationId">Generation identifier.</param>
         /// <returns>Detailed generation DTO or <c>null</c> if not found.</returns>
         Task<GenerationWithTrimsDto?> GetGenerationWithTrimsAsync(int generationId);
+
+        /// <summary>
+        /// Returns variant-first generation details including trims.
+        /// </summary>
+        /// <param name="generationVariantId">Generation variant identifier.</param>
+        /// <returns>Detailed generation DTO projected to a single variant or <c>null</c> if not found.</returns>
+        Task<GenerationWithTrimsDto?> GetGenerationVariantWithTrimsAsync(int generationVariantId);
 
         /// <summary>
         /// Returns full trim details including hierarchy and technical specs.
@@ -136,3 +191,6 @@ namespace CarComparisonApi.Services
         Task<IEnumerable<Trim>> GetTrimsForComparisonAsync(IEnumerable<int> trimIds);
     }
 }
+
+
+

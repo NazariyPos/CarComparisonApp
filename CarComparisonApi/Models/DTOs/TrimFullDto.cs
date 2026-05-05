@@ -14,6 +14,7 @@ namespace CarComparisonApi.Models.DTOs
         public int? SeatsCount { get; set; }
 
         public GenerationBasicDto Generation { get; set; } = new();
+        public GenerationVariantBasicDto GenerationVariant { get; set; } = new();
         public ModelBasicDto Model { get; set; } = new();
         public BrandBasicDto Brand { get; set; } = new();
         public TechnicalDetails? TechnicalDetails { get; set; }
@@ -38,7 +39,6 @@ namespace CarComparisonApi.Models.DTOs
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string BodyType { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -48,5 +48,18 @@ namespace CarComparisonApi.Models.DTOs
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Basic generation variant data.
+    /// </summary>
+    public class GenerationVariantBasicDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string VariantType { get; set; } = string.Empty;
+        public int BodyStyleId { get; set; }
+        public string BodyStyleName { get; set; } = string.Empty;
+        public int DoorsCount { get; set; }
     }
 }

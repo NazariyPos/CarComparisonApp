@@ -8,7 +8,10 @@ namespace CarComparisonApi.Models.DTOs
     public class GenerationWithTrimsDto
     {
         public int Id { get; set; }
+        public int GenerationVariantId { get; set; }
+        public int? LegacyGenerationId { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
         public int YearFrom { get; set; }
         public int YearTo { get; set; }
         public string? PhotoUrl { get; set; }
@@ -25,9 +28,12 @@ namespace CarComparisonApi.Models.DTOs
     public class TrimBasicDto
     {
         public int Id { get; set; }
+        public int GenerationVariantId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string TransmissionType { get; set; } = string.Empty;
         public int? DoorsCount { get; set; }
         public int? SeatsCount { get; set; }
+        public string VariantType { get; set; } = string.Empty;
+        public string BodyStyleName { get; set; } = string.Empty;
     }
 }

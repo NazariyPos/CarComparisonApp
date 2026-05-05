@@ -138,22 +138,23 @@ namespace CarComparisonApi.Services
                 .Where(r => r.TrimId == trimId)
                 .Include(r => r.User)
                 .Include(r => r.Trim)
-                    .ThenInclude(t => t!.Generation)
-                        .ThenInclude(g => g!.Model)
-                            .ThenInclude(m => m!.Brand)
+                    .ThenInclude(t => t!.GenerationVariant)
+                        .ThenInclude(v => v!.Generation)
+                            .ThenInclude(g => g!.Model)
+                                .ThenInclude(m => m!.Brand)
                 .AsNoTracking()
                 .ToListAsync();
 
             return reviews
-                .Where(r => r.Trim?.Generation?.Model?.Brand != null)
+                .Where(r => r.Trim?.GenerationVariant?.Generation?.Model?.Brand != null)
                 .Select(r => new
                 {
                     Review = r,
                     Username = r.User?.Username ?? "Невідомий",
-                    Model = r.Trim!.Generation!.Model!.Name,
-                    Generation = r.Trim.Generation.Name,
+                    Model = r.Trim!.GenerationVariant!.Generation!.Model!.Name,
+                    Generation = r.Trim.GenerationVariant.Generation.Name,
                     Trim = r.Trim.Name,
-                    Brand = r.Trim.Generation.Model.Brand!.Name
+                    Brand = r.Trim.GenerationVariant.Generation.Model.Brand!.Name
                 })
                 .ToList();
         }

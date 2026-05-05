@@ -32,9 +32,14 @@ namespace CarComparisonApi.Controllers
         /// <param name="generation">Generation name filter.</param>
         /// <param name="minYear">Minimum production year.</param>
         /// <param name="maxYear">Maximum production year.</param>
-        /// <param name="bodyType">Body type filter.</param>
+        /// <param name="bodyStyleId">Body style identifier filter.</param>
+        /// <param name="variantType">Variant type filter (deprecated, use generationVariantId).</param>
         /// <param name="transmission">Transmission type filter.</param>
         /// <param name="fuelType">Fuel type filter.</param>
+        /// <param name="brandId">Optional brand identifier filter.</param>
+        /// <param name="modelId">Optional model identifier filter.</param>
+        /// <param name="generationId">Optional generation identifier filter (deprecated, use generationVariantId).</param>
+        /// <param name="generationVariantId">Optional generation variant identifier filter.</param>
         /// <returns>Filtered generation cards or validation/result errors.</returns>
         [HttpGet("search")]
         [SwaggerOperation(Summary = "Search car generations")]
@@ -48,11 +53,17 @@ namespace CarComparisonApi.Controllers
             [FromQuery] string? generation,
             [FromQuery] int? minYear,
             [FromQuery] int? maxYear,
-            [FromQuery] string? bodyType,
+            [FromQuery] int? bodyStyleId,
+            [FromQuery] string? variantType,
             [FromQuery] string? transmission,
-            [FromQuery] string? fuelType)
+            [FromQuery] string? fuelType,
+            [FromQuery] int? brandId,
+            [FromQuery] int? modelId,
+            [FromQuery] int? generationId,
+            [FromQuery] int? generationVariantId)
         {
             var validationErrors = new List<string>();
+            GenerationVariantType? parsedVariantType = null;
 
             if (!string.IsNullOrEmpty(model) && string.IsNullOrEmpty(brand))
             {
@@ -86,6 +97,23 @@ namespace CarComparisonApi.Controllers
                 validationErrors.Add($"Максимальний рік не може бути більшим за {DateTime.Now.Year + 1}");
             }
 
+            if (bodyStyleId <= 0)
+            {
+                validationErrors.Add("ID кузова має бути додатним числом");
+            }
+
+            if (!string.IsNullOrWhiteSpace(variantType))
+            {
+                if (Enum.TryParse<GenerationVariantType>(variantType, true, out var parsed))
+                {
+                    parsedVariantType = parsed;
+                }
+                else
+                {
+                    validationErrors.Add("Невідомий тип рестайлінгу (variantType)");
+                }
+            }
+
             if (validationErrors.Count != 0)
             {
                 return BadRequest(new
@@ -99,7 +127,8 @@ namespace CarComparisonApi.Controllers
             {
                 var result = await _carService.GetGenerationCardsAsync(
                     brand, model, generation, minYear, maxYear,
-                    bodyType, transmission, fuelType);
+                    bodyStyleId, parsedVariantType, transmission, fuelType,
+                    brandId, modelId, generationId, generationVariantId);
 
                 if (!result.Any())
                 {
@@ -113,9 +142,13 @@ namespace CarComparisonApi.Controllers
                             generation,
                             minYear,
                             maxYear,
-                            bodyType,
+                            bodyStyleId,
+                            variantType,
                             transmission,
-                            fuelType
+                            fuelType,
+                            brandId,
+                            modelId,
+                            generationId
                         }
                     });
                 }
@@ -127,6 +160,47 @@ namespace CarComparisonApi.Controllers
                 return StatusCode(500, new
                 {
                     message = "Сталася внутрішня помилка під час пошуку",
+                    error = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Returns available filter options for current search scope.
+        /// </summary>
+        /// <param name="brand">Brand name filter.</param>
+        /// <param name="model">Model name filter.</param>
+        /// <param name="generation">Generation name filter.</param>
+        /// <param name="minYear">Minimum production year.</param>
+        /// <param name="maxYear">Maximum production year.</param>
+        /// <returns>Aggregated facet values for body type, transmission and fuel.</returns>
+        [HttpGet("search-facets")]
+        [SwaggerOperation(Summary = "Get available search filter options")]
+        [ProducesResponseType(typeof(SearchFacetsDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> SearchFacets(
+            [FromQuery] string? brand,
+            [FromQuery] string? model,
+            [FromQuery] string? generation,
+            [FromQuery] int? minYear,
+            [FromQuery] int? maxYear)
+        {
+            try
+            {
+                var facets = await _carService.GetSearchFacetsAsync(
+                    brand,
+                    model,
+                    generation,
+                    minYear,
+                    maxYear);
+
+                return Ok(facets);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Сталася внутрішня помилка під час отримання фільтрів",
                     error = ex.Message
                 });
             }
@@ -270,6 +344,39 @@ namespace CarComparisonApi.Controllers
         }
 
         /// <summary>
+        /// Returns generation variants by model identifier.
+        /// </summary>
+        /// <param name="modelId">Model identifier.</param>
+        /// <returns>List of generation variants for the model.</returns>
+        [HttpGet("models/{modelId}/variants")]
+        [SwaggerOperation(Summary = "Get generation variants by model ID")]
+        [ProducesResponseType(typeof(IEnumerable<GenerationVariantDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetGenerationVariantsByModel(int modelId)
+        {
+            if (modelId <= 0)
+            {
+                return BadRequest("ID моделі має бути додатним числом");
+            }
+
+            var modelExists = await _carService.GetModelByIdAsync(modelId);
+            if (modelExists == null)
+            {
+                return NotFound($"Модель з ID {modelId} не знайдена");
+            }
+
+            var variants = await _carService.GetGenerationVariantsByModelIdAsync(modelId);
+
+            if (!variants.Any())
+            {
+                return NotFound($"Для моделі з ID {modelId} не знайдено варіантів поколінь");
+            }
+
+            return Ok(variants);
+        }
+
+        /// <summary>
         /// Returns generation details by identifier.
         /// </summary>
         /// <param name="id">Generation identifier.</param>
@@ -320,6 +427,33 @@ namespace CarComparisonApi.Controllers
             if (!trims.Any())
             {
                 return NotFound($"Для покоління з ID {generationId} не знайдено комплектацій");
+            }
+
+            return Ok(trims);
+        }
+
+        /// <summary>
+        /// Returns trims by generation variant identifier.
+        /// </summary>
+        /// <param name="variantId">Generation variant identifier.</param>
+        /// <returns>List of trims for the variant.</returns>
+        [HttpGet("variants/{variantId}/trims")]
+        [SwaggerOperation(Summary = "Get trims by generation variant ID")]
+        [ProducesResponseType(typeof(IEnumerable<Trim>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetTrimsByGenerationVariant(int variantId)
+        {
+            if (variantId <= 0)
+            {
+                return BadRequest("ID варіанту покоління має бути додатним числом");
+            }
+
+            var trims = await _carService.GetTrimsByGenerationVariantIdAsync(variantId);
+
+            if (!trims.Any())
+            {
+                return NotFound($"Для варіанту покоління з ID {variantId} не знайдено комплектацій");
             }
 
             return Ok(trims);
@@ -381,7 +515,7 @@ namespace CarComparisonApi.Controllers
         /// Returns generation details with its trims.
         /// </summary>
         /// <param name="id">Generation identifier.</param>
-        /// <returns>Generation details with basic trim information.</returns>
+        /// <returns>Generation details with trims.</returns>
         [HttpGet("generations/{id}/details")]
         [SwaggerOperation(Summary = "Get generation details with trims")]
         [ProducesResponseType(typeof(GenerationWithTrimsDto), StatusCodes.Status200OK)]
@@ -390,36 +524,83 @@ namespace CarComparisonApi.Controllers
         public async Task<IActionResult> GetGenerationDetails(int id)
         {
             if (id <= 0)
+            {
                 return BadRequest("ID має бути додатним числом");
+            }
 
-            var generation = await _carService.GetGenerationWithTrimsAsync(id);
-            if (generation == null)
-                return NotFound($"Покоління з ID {id} не знайдено");
+            var generationDetails = await _carService.GetGenerationWithTrimsAsync(id);
+            if (generationDetails == null)
+                return NotFound($"Покоління з ID {id} не знайдена");
 
-            return Ok(generation);
+            return Ok(generationDetails);
         }
 
         /// <summary>
-        /// Returns full trim details including technical specifications.
+        /// Returns variant-first generation details with trims.
+        /// </summary>
+        /// <param name="id">Generation variant identifier.</param>
+        /// <returns>Generation details projected to the requested variant.</returns>
+        [HttpGet("variants/{id}/details")]
+        [SwaggerOperation(Summary = "Get generation variant details with trims")]
+        [ProducesResponseType(typeof(GenerationWithTrimsDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetGenerationVariantDetails(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest("ID має бути додатним числом");
+            }
+
+            var variantDetails = await _carService.GetGenerationVariantWithTrimsAsync(id);
+            if (variantDetails == null)
+                return NotFound($"Варіант покоління з ID {id} не знайдений");
+
+            return Ok(variantDetails);
+        }
+
+        /// <summary>
+        /// Returns full trim details with hierarchy and specs.
         /// </summary>
         /// <param name="id">Trim identifier.</param>
-        /// <returns>Full trim details DTO.</returns>
-        [HttpGet("trims/{id}/full")]
+        /// <returns>Full trim details.</returns>
+        [HttpGet("trims/{id}/details")]
         [SwaggerOperation(Summary = "Get full trim details")]
         [ProducesResponseType(typeof(TrimFullDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetTrimFullDetails(int id)
+        public async Task<IActionResult> GetTrimDetails(int id)
         {
             if (id <= 0)
+            {
                 return BadRequest("ID має бути додатним числом");
+            }
 
-            var trim = await _carService.GetTrimFullDetailsAsync(id);
-            if (trim == null)
+            var trimDetails = await _carService.GetTrimFullDetailsAsync(id);
+            if (trimDetails == null)
                 return NotFound($"Комплектація з ID {id} не знайдена");
 
-            return Ok(trim);
+            return Ok(trimDetails);
         }
 
+        /// <summary>
+        /// Returns trims for comparison.
+        /// </summary>
+        /// <param name="trimIds">Trim identifiers to compare.</param>
+        /// <returns>Trims for comparison.</returns>
+        [HttpPost("trims/comparison")]
+        [SwaggerOperation(Summary = "Get trims for comparison")]
+        [ProducesResponseType(typeof(IEnumerable<Trim>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetTrimsForComparison([FromBody] List<int> trimIds)
+        {
+            if (trimIds == null || trimIds.Count == 0)
+            {
+                return BadRequest("Потрібно вказати хоча б один ID комплектації");
+            }
+
+            var trims = await _carService.GetTrimsForComparisonAsync(trimIds);
+            return Ok(trims);
+        }
     }
 }
