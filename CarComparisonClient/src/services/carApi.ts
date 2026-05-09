@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { apiClient } from './apiClient'
 
 export interface BrandBasicDto {
@@ -66,6 +67,10 @@ export interface GenerationImageDto {
   createdAt: string
 }
 
+export interface ExternalCarImageDto {
+  url: string
+}
+
 export interface GenerationVariantDto {
   id: number
   generationId: number
@@ -130,8 +135,38 @@ export interface ModelBasicDto {
 }
 
 export interface TechnicalDetailsFullDto {
+  maxSpeed?: number
+  acceleration0To100?: number
+  engineCode?: string
+  engineType?: string
+  cylindersCount?: number
+  valvesCount?: number
+  compressionRatio?: number
+  fuelType?: string
   power?: number
+  torque?: number
+  maxPowerAtRPM?: number
+  maxTorqueAtRPM?: number
+  engineDisplacement?: number
   driveType?: string
+  fuelConsumptionCity?: number
+  fuelConsumptionMixed?: number
+  fuelConsumptionHighway?: number
+  electricRange?: number
+  length?: number
+  width?: number
+  height?: number
+  wheelbase?: number
+  frontTrack?: number
+  rearTrack?: number
+  curbWeight?: number
+  grossWeight?: number
+  fuelTankCapacity?: number
+  turningCircle?: number
+  frontBrakes?: string
+  rearBrakes?: string
+  frontSuspension?: string
+  rearSuspension?: string
 }
 
 export interface TrimFullDetailsDto {
@@ -455,8 +490,38 @@ function mapModelBasicDto(raw: RawDto): ModelBasicDto {
 
 function mapTechnicalDetailsFullDto(raw: RawDto): TechnicalDetailsFullDto {
   return {
+    maxSpeed: readOptionalNumber(raw, 'maxSpeed', 'MaxSpeed'),
+    acceleration0To100: readOptionalNumber(raw, 'acceleration0To100', 'Acceleration0To100'),
+    engineCode: readOptionalString(raw, 'engineCode', 'EngineCode'),
+    engineType: readOptionalString(raw, 'engineType', 'EngineType'),
+    cylindersCount: readOptionalNumber(raw, 'cylindersCount', 'CylindersCount'),
+    valvesCount: readOptionalNumber(raw, 'valvesCount', 'ValvesCount'),
+    compressionRatio: readOptionalNumber(raw, 'compressionRatio', 'CompressionRatio'),
+    fuelType: readOptionalString(raw, 'fuelType', 'FuelType'),
     power: readOptionalNumber(raw, 'power', 'Power'),
     driveType: readOptionalString(raw, 'driveType', 'DriveType'),
+    torque: readOptionalNumber(raw, 'torque', 'Torque'),
+    maxPowerAtRPM: readOptionalNumber(raw, 'maxPowerAtRPM', 'MaxPowerAtRPM'),
+    maxTorqueAtRPM: readOptionalNumber(raw, 'maxTorqueAtRPM', 'MaxTorqueAtRPM'),
+    engineDisplacement: readOptionalNumber(raw, 'engineDisplacement', 'EngineDisplacement'),
+    fuelConsumptionCity: readOptionalNumber(raw, 'fuelConsumptionCity', 'FuelConsumptionCity'),
+    fuelConsumptionMixed: readOptionalNumber(raw, 'fuelConsumptionMixed', 'FuelConsumptionMixed'),
+    fuelConsumptionHighway: readOptionalNumber(raw, 'fuelConsumptionHighway', 'FuelConsumptionHighway'),
+    electricRange: readOptionalNumber(raw, 'electricRange', 'ElectricRange'),
+    length: readOptionalNumber(raw, 'length', 'Length'),
+    width: readOptionalNumber(raw, 'width', 'Width'),
+    height: readOptionalNumber(raw, 'height', 'Height'),
+    wheelbase: readOptionalNumber(raw, 'wheelbase', 'Wheelbase'),
+    frontTrack: readOptionalNumber(raw, 'frontTrack', 'FrontTrack'),
+    rearTrack: readOptionalNumber(raw, 'rearTrack', 'RearTrack'),
+    curbWeight: readOptionalNumber(raw, 'curbWeight', 'CurbWeight'),
+    grossWeight: readOptionalNumber(raw, 'grossWeight', 'GrossWeight'),
+    fuelTankCapacity: readOptionalNumber(raw, 'fuelTankCapacity', 'FuelTankCapacity'),
+    turningCircle: readOptionalNumber(raw, 'turningCircle', 'TurningCircle'),
+    frontBrakes: readOptionalString(raw, 'frontBrakes', 'FrontBrakes'),
+    rearBrakes: readOptionalString(raw, 'rearBrakes', 'RearBrakes'),
+    frontSuspension: readOptionalString(raw, 'frontSuspension', 'FrontSuspension'),
+    rearSuspension: readOptionalString(raw, 'rearSuspension', 'RearSuspension'),
   }
 }
 
@@ -700,7 +765,7 @@ export async function getTrimFullDetails(
   trimId: number,
 ): Promise<TrimFullDetailsDto | null> {
   try {
-    const { data } = await apiClient.get<unknown>(`/Cars/trims/${trimId}/full`)
+    const { data } = await apiClient.get<unknown>(`/Cars/trims/${trimId}/details`)
 
     if (!data || typeof data !== 'object') {
       return null
@@ -718,6 +783,35 @@ export async function getReviewsByTrim(
   try {
     const { data } = await apiClient.get<unknown>(`/Reviews/trim/${trimId}`)
     return asRawDtoArray(data).map(mapReviewWithDetailsDto)
+  } catch {
+    return []
+  }
+}
+
+export async function getCarImagesFromExternal(
+  brand: string,
+  model: string,
+  year?: number,
+): Promise<ExternalCarImageDto[]> {
+  try {
+    const params: Record<string, string | number> = {
+      brand,
+      model,
+    }
+
+    if (typeof year === 'number' && Number.isFinite(year)) {
+      params.year = year
+    }
+
+    const { data } = await apiClient.get<unknown>('/Cars/images/external', {
+      params,
+    })
+
+    return asRawDtoArray(data)
+      .map((item) => ({
+        url: readString(item, 'url', 'Url'),
+      }))
+      .filter((item) => item.url.length > 0)
   } catch {
     return []
   }
@@ -835,11 +929,34 @@ export async function createGeneration(modelId: number, name: string, yearFrom: 
   }
 }
 
-export async function createGenerationVariant(generationId: number, payload: { name: string; variantType: string; bodyStyleId?: number; doorsCount: number; yearFrom: number; yearTo: number; isDefault: boolean; photoUrl?: string }): Promise<{ id: number; name: string; generationId: number } | null> {
+export async function getAdminBodyStyles(): Promise<BodyStyleOptionDto[]> {
   try {
-    const { data } = await apiClient.post(`/admin/generations/${generationId}/variants`, payload)
-    return data as { id: number; name: string; generationId: number }
+    const { data } = await apiClient.get<unknown>('/admin/body-styles')
+    return asRawDtoArray(data)
+      .map((item) => ({
+        id: readNumber(item, 'id', 'Id'),
+        name: readString(item, 'name', 'Name'),
+      }))
+      .filter((item) => item.id > 0 && item.name.length > 0)
   } catch {
+    return []
+  }
+}
+
+export async function createGenerationVariant(modelId: number, payload: { name: string; variantType: string; bodyStyleId?: number; doorsCount: number; yearFrom: number; yearTo: number; isDefault: boolean; photoUrl?: string }): Promise<{ id: number; name: string; modelId: number; error?: string } | null> {
+  try {
+    const { data } = await apiClient.post(`/admin/models/${modelId}/variants`, payload)
+    return data as { id: number; name: string; modelId: number }
+  } catch (error: unknown) {
+    if (isAxiosError(error) && error.response?.status === 409) {
+      const responseData = error.response.data as Record<string, unknown>
+      return {
+        id: 0,
+        name: '',
+        modelId,
+        error: (responseData?.message as string) || 'Варіант з такими параметрами вже існує'
+      }
+    }
     return null
   }
 }
@@ -853,7 +970,40 @@ export async function createTrim(variantId: number, payload: { name: string; tra
   }
 }
 
-export async function createTechnicalDetails(trimId: number, payload: { fuelType?: string; power?: number; driveType?: string }): Promise<{ id: number; trimId: number } | null> {
+export async function createTechnicalDetails(trimId: number, payload: { 
+  maxSpeed?: number
+  acceleration0To100?: number
+  engineCode?: string
+  engineType?: string
+  cylindersCount?: number
+  valvesCount?: number
+  compressionRatio?: number
+  fuelType?: string
+  power?: number
+  torque?: number
+  maxPowerAtRPM?: number
+  maxTorqueAtRPM?: number
+  engineDisplacement?: number
+  driveType?: string
+  fuelConsumptionCity?: number
+  fuelConsumptionMixed?: number
+  fuelConsumptionHighway?: number
+  electricRange?: number
+  length?: number
+  width?: number
+  height?: number
+  wheelbase?: number
+  frontTrack?: number
+  rearTrack?: number
+  curbWeight?: number
+  grossWeight?: number
+  fuelTankCapacity?: number
+  turningCircle?: number
+  frontBrakes?: string
+  rearBrakes?: string
+  frontSuspension?: string
+  rearSuspension?: string
+}): Promise<{ id: number; trimId: number } | null> {
   try {
     const { data } = await apiClient.post(`/admin/trims/${trimId}/technical-details`, payload)
     return data as { id: number; trimId: number }

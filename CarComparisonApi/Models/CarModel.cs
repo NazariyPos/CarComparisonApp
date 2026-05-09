@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace CarComparisonApi.Models
 {
     /// <summary>
@@ -10,6 +12,13 @@ namespace CarComparisonApi.Models
         public int BrandId { get; set; }
         public CarBrand? Brand { get; set; }
         public string? BodyType { get; set; }
-        public List<Generation> Generations { get; set; } = new();
+        public List<GenerationVariant> GenerationVariants { get; set; } = new();
+
+        [NotMapped]
+        public List<GenerationVariant> Generations
+        {
+            get => GenerationVariants;
+            set => GenerationVariants = value;
+        }
     }
 }

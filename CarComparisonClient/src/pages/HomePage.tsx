@@ -1,11 +1,17 @@
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export function HomePage() {
   const { currentUser, isAuthenticated, logout } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const returnPath = `${location.pathname}${location.search}${location.hash}`
   const canAccessAdminPhotos = isAuthenticated && currentUser?.isAdmin
+
+  const handleLogout = () => {
+    logout()
+    navigate('/', { replace: true })
+  }
 
   return (
     <div className="home-page">
@@ -44,7 +50,7 @@ export function HomePage() {
                   <button
                     type="button"
                     className="home-account-logout"
-                    onClick={logout}
+                    onClick={handleLogout}
                     role="menuitem"
                   >
                     Вийти

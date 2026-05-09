@@ -9,6 +9,7 @@ import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { TrimDetailsPage } from './pages/TrimDetailsPage'
 import './App.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Route path="/brands" element={<BrandsPage />} />
         <Route path="/cars/:generationId" element={<CarDetailsPage />} />
         <Route path="/cars/variants/:generationVariantId" element={<CarDetailsPage />} />
+        <Route path="/cars/variants/:generationVariantId/trims/:trimId" element={<TrimDetailsPage />} />
         <Route path="/comparison" element={<ComparisonPage />} />
         <Route path="/admin/photos" element={<AdminPhotoUploadPage />} />
         <Route path="/admin/catalog" element={<AdminCatalogPage />} />

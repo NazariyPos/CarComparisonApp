@@ -8,6 +8,7 @@ import {
   getSearchFacets,
   getModelsByBrand,
   searchGenerations,
+  getCarImagesFromExternal,
   type BodyStyleOptionDto,
   type BrandBasicDto,
   type GenerationVariantDto,
@@ -33,6 +34,7 @@ export function BrandsPage() {
   const [transmissionOptions, setTransmissionOptions] = useState<string[]>([])
   const [fuelTypeOptions, setFuelTypeOptions] = useState<string[]>([])
   const [isFiltersLoading, setIsFiltersLoading] = useState(false)
+  const [externalImages, setExternalImages] = useState<Map<string, string>>(new Map())
 
   const [hasSearch, setHasSearch] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -208,6 +210,44 @@ export function BrandsPage() {
     ]
   }, [results])
 
+  useEffect(() => {
+    if (results.length === 0) {
+      setExternalImages(new Map())
+      return
+    }
+
+    const loadExternalImages = async () => {
+      const imageMap = new Map<string, string>()
+
+      // Get unique brand+model combinations
+      const uniquePairs = new Map<string, { brand: string; model: string; year?: number }>()
+      results.forEach((item) => {
+        const year = item.yearFrom > 0 ? item.yearFrom : undefined
+        const key = `${item.brandName}-${item.modelName}-${year ?? 'any'}`
+        if (!uniquePairs.has(key)) {
+          uniquePairs.set(key, { brand: item.brandName, model: item.modelName, year })
+        }
+      })
+
+      // Load images for each unique pair
+      for (const { brand, model, year } of uniquePairs.values()) {
+        try {
+          const images = await getCarImagesFromExternal(brand, model, year)
+          if (images.length > 0) {
+            const key = `${brand}-${model}-${year ?? 'any'}`
+            imageMap.set(key, images[0].url)
+          }
+        } catch {
+          // Gracefully handle API errors
+        }
+      }
+
+      setExternalImages(imageMap)
+    }
+
+    void loadExternalImages()
+  }, [results])
+
   const handleSearch = async () => {
     setIsLoading(true)
     setHasSearch(true)
@@ -285,7 +325,7 @@ export function BrandsPage() {
               <option value="">Покоління / Рестайлінг / Кузов</option>
               {generationVariants.map((variant) => (
                 <option key={variant.id} value={variant.id}>
-                  {variant.name} {variant.variantType === 'Facelift' ? '(FL)' : ''} — {variant.yearFrom}–{variant.yearTo}, {variant.bodyStyleName}
+                  {variant.name} — {variant.yearFrom}–{variant.yearTo}, {variant.bodyStyleName}
                 </option>
               ))}
             </select>
@@ -362,20 +402,27 @@ export function BrandsPage() {
 
             {results.length > 0 && (
               <ul className="result-grid">
-                {results.map((item) => (
-                  <li
-                    key={`${item.generationVariantId ?? item.generationId}-${item.modelId}`}
-                    className="result-card"
-                  >
-                    {item.photoUrl ? (
-                      <img
-                        src={item.photoUrl}
-                        alt={`${item.brandName} ${item.modelName}`}
-                        className="result-card-photo"
-                      />
-                    ) : (
-                      <div className="placeholder-photo">Зображення скоро</div>
-                    )}
+                {results.map((item) => {
+                  const imageKey = `${item.brandName}-${item.modelName}-${item.yearFrom > 0 ? item.yearFrom : 'any'}`
+                  const externalImageUrl = externalImages.get(
+                    imageKey
+                  )
+                  const photoUrl = externalImageUrl || item.photoUrl
+
+                  return (
+                    <li
+                      key={`${item.generationVariantId ?? item.generationId}-${item.modelId}`}
+                      className="result-card"
+                    >
+                      {photoUrl ? (
+                        <img
+                          src={photoUrl}
+                          alt={`${item.brandName} ${item.modelName}`}
+                          className="result-card-photo"
+                        />
+                      ) : (
+                        <div className="placeholder-photo">Зображення скоро</div>
+                      )}
                     <strong>
                       {item.brandName} {item.modelName}
                     </strong>
@@ -398,7 +445,8 @@ export function BrandsPage() {
                       Переглянути сторінку авто
                     </Link>
                   </li>
-                ))}
+                  )
+                })}
               </ul>
             )}
           </section>

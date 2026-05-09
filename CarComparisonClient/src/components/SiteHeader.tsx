@@ -1,4 +1,4 @@
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const navClassName = ({ isActive }: { isActive: boolean }) =>
@@ -7,8 +7,14 @@ const navClassName = ({ isActive }: { isActive: boolean }) =>
 export function SiteHeader() {
   const { currentUser, isAuthenticated, logout } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const returnPath = `${location.pathname}${location.search}${location.hash}`
   const canAccessAdminPhotos = isAuthenticated && currentUser?.isAdmin
+
+  const handleLogout = () => {
+    logout()
+    navigate('/', { replace: true })
+  }
 
   return (
     <header className="site-header">
@@ -40,7 +46,7 @@ export function SiteHeader() {
           <div className="site-account" aria-label="Поточний користувач">
             <span className="site-account-trigger">{currentUser.login}</span>
             <div className="site-account-menu" role="menu" aria-label="Меню акаунту">
-              <button type="button" className="site-account-logout" onClick={logout} role="menuitem">
+              <button type="button" className="site-account-logout" onClick={handleLogout} role="menuitem">
                 Вийти
               </button>
             </div>

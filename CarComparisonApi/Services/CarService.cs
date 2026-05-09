@@ -23,14 +23,12 @@ namespace CarComparisonApi.Services
         {
             return await _dbContext.CarBrands
                 .Include(b => b.Models)
-                    .ThenInclude(m => m.Generations)
-                        .ThenInclude(g => g.Variants)
-                            .ThenInclude(v => v.Images)
+                    .ThenInclude(m => m.GenerationVariants)
+                        .ThenInclude(v => v.Images)
                 .Include(b => b.Models)
-                    .ThenInclude(m => m.Generations)
-                        .ThenInclude(g => g.Variants)
-                            .ThenInclude(v => v.Trims)
-                                .ThenInclude(t => t.TechnicalDetails)
+                    .ThenInclude(m => m.GenerationVariants)
+                        .ThenInclude(v => v.Trims)
+                            .ThenInclude(t => t.TechnicalDetails)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -39,158 +37,48 @@ namespace CarComparisonApi.Services
         {
             return await _dbContext.CarBrands
                 .Include(b => b.Models)
-                    .ThenInclude(m => m.Generations)
-                        .ThenInclude(g => g.Variants)
-                            .ThenInclude(v => v.Images)
+                    .ThenInclude(m => m.GenerationVariants)
+                        .ThenInclude(v => v.Images)
                 .Include(b => b.Models)
-                    .ThenInclude(m => m.Generations)
-                        .ThenInclude(g => g.Variants)
-                            .ThenInclude(v => v.Trims)
-                                .ThenInclude(t => t.TechnicalDetails)
+                    .ThenInclude(m => m.GenerationVariants)
+                        .ThenInclude(v => v.Trims)
+                            .ThenInclude(t => t.TechnicalDetails)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(b => b.Id == id);
         }
 
         public async Task<GenerationWithTrimsDto?> GetGenerationWithTrimsAsync(int generationId)
         {
-            var generation = await _dbContext.Generations
-                .Include(g => g.Model)
-                    .ThenInclude(m => m!.Brand)
-                .Include(g => g.Variants)
-                    .ThenInclude(v => v.Images)
-                .Include(g => g.Variants)
-                    .ThenInclude(v => v.BodyStyle)
-                .Include(g => g.Variants)
-                    .ThenInclude(v => v.Trims)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(g => g.Id == generationId);
-
-            if (generation?.Model?.Brand == null)
-            {
-                return null;
-            }
-
-            var defaultVariant = generation.Variants
-                .OrderByDescending(v => v.IsDefault)
-                .ThenBy(v => v.Id)
-                .FirstOrDefault();
-
-            return new GenerationWithTrimsDto
-            {
-                Id = generation.Id,
-                GenerationVariantId = defaultVariant?.Id ?? 0,
-                LegacyGenerationId = generation.Id,
-                Name = generation.Name,
-                DisplayName = defaultVariant?.Name ?? generation.Name,
-                YearFrom = generation.YearFrom,
-                YearTo = generation.YearTo,
-                PhotoUrl = generation.Variants
-                    .OrderByDescending(v => v.IsDefault)
-                    .Select(v => v.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? v.PhotoUrl)
-                    .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u))
-                    ?? generation.PhotoUrl,
-                Variants = generation.Variants
-                    .OrderBy(v => v.YearFrom)
-                    .ThenBy(v => v.BodyStyle!.Name)
-                    .Select(v => new GenerationVariantDto
-                    {
-                        Id = v.Id,
-                        Name = v.Name,
-                        VariantType = v.VariantType.ToString(),
-                        BodyStyleId = v.BodyStyleId,
-                        BodyStyleName = v.BodyStyle?.Name ?? string.Empty,
-                        DoorsCount = v.DoorsCount,
-                        YearFrom = v.YearFrom,
-                        YearTo = v.YearTo,
-                        IsDefault = v.IsDefault,
-                        PhotoUrl = v.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? v.PhotoUrl,
-                        Images = v.Images
-                            .OrderByDescending(i => i.IsPrimary)
-                            .ThenBy(i => i.SortOrder)
-                            .ThenBy(i => i.Id)
-                            .Select(i => new GenerationImageDto
-                            {
-                                Id = i.Id,
-                                GenerationVariantId = i.GenerationVariantId,
-                                Url = i.Url,
-                                IsPrimary = i.IsPrimary,
-                                SortOrder = i.SortOrder,
-                                CreatedAt = i.CreatedAt
-                            })
-                            .ToList()
-                    })
-                    .ToList(),
-                Brand = new BrandDto
-                {
-                    Id = generation.Model.Brand.Id,
-                    Name = generation.Model.Brand.Name
-                },
-                Model = new ModelDto
-                {
-                    Id = generation.Model.Id,
-                    Name = generation.Model.Name,
-                    BodyType = string.Join(
-                        " / ",
-                        generation.Variants
-                            .Select(v => v.BodyStyle?.Name)
-                            .Where(n => !string.IsNullOrWhiteSpace(n))
-                            .Distinct()
-                            .Order()),
-                    BrandId = generation.Model.BrandId
-                },
-                Trims = generation.Variants
-                    .SelectMany(v => v.Trims.Select(t => new TrimBasicDto
-                    {
-                        Id = t.Id,
-                        GenerationVariantId = v.Id,
-                        Name = t.Name,
-                        TransmissionType = t.TransmissionType ?? string.Empty,
-                        DoorsCount = t.DoorsCount,
-                        SeatsCount = t.SeatsCount,
-                        VariantType = v.VariantType.ToString(),
-                        BodyStyleName = v.BodyStyle?.Name ?? string.Empty
-                    }))
-                    .OrderBy(t => t.GenerationVariantId)
-                    .ThenBy(t => t.Name)
-                    .ToList()
-            };
-        }
-
-        public async Task<GenerationWithTrimsDto?> GetGenerationVariantWithTrimsAsync(int generationVariantId)
-        {
             var variant = await _dbContext.GenerationVariants
-                .Include(v => v.Generation)
-                    .ThenInclude(g => g!.Model)
-                        .ThenInclude(m => m!.Brand)
+                .Include(v => v.Model)
+                    .ThenInclude(m => m!.Brand)
                 .Include(v => v.Images)
                 .Include(v => v.BodyStyle)
                 .Include(v => v.Trims)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(v => v.Id == generationVariantId);
+                .FirstOrDefaultAsync(v => v.Id == generationId);
 
-            if (variant?.Generation?.Model?.Brand == null)
+            if (variant?.Model?.Brand == null)
             {
                 return null;
             }
-
-            var generation = variant.Generation;
 
             return new GenerationWithTrimsDto
             {
                 Id = variant.Id,
                 GenerationVariantId = variant.Id,
-                LegacyGenerationId = generation.Id,
+                LegacyGenerationId = variant.ModelId,
                 Name = variant.Name,
                 DisplayName = variant.Name,
                 YearFrom = variant.YearFrom,
                 YearTo = variant.YearTo,
-                PhotoUrl = variant.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? variant.PhotoUrl ?? generation.PhotoUrl,
+                PhotoUrl = variant.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? variant.PhotoUrl,
                 Variants = new List<GenerationVariantDto>
                 {
                     new()
                     {
                         Id = variant.Id,
-                        GenerationId = variant.GenerationId,
+                        GenerationId = variant.ModelId,
                         Name = variant.Name,
                         VariantType = variant.VariantType.ToString(),
                         BodyStyleId = variant.BodyStyleId,
@@ -218,15 +106,101 @@ namespace CarComparisonApi.Services
                 },
                 Brand = new BrandDto
                 {
-                    Id = generation.Model!.Brand!.Id,
-                    Name = generation.Model.Brand.Name
+                    Id = variant.Model.Brand.Id,
+                    Name = variant.Model.Brand.Name
                 },
                 Model = new ModelDto
                 {
-                    Id = generation.Model.Id,
-                    Name = generation.Model.Name,
+                    Id = variant.Model.Id,
+                    Name = variant.Model.Name,
                     BodyType = variant.BodyStyle?.Name ?? string.Empty,
-                    BrandId = generation.Model.BrandId
+                    BrandId = variant.Model.BrandId
+                },
+                Trims = variant.Trims
+                    .Select(t => new TrimBasicDto
+                    {
+                        Id = t.Id,
+                        GenerationVariantId = variant.Id,
+                        Name = t.Name,
+                        TransmissionType = t.TransmissionType ?? string.Empty,
+                        DoorsCount = t.DoorsCount,
+                        SeatsCount = t.SeatsCount,
+                        VariantType = variant.VariantType.ToString(),
+                        BodyStyleName = variant.BodyStyle?.Name ?? string.Empty
+                    })
+                    .OrderBy(t => t.Name)
+                    .ToList()
+            };
+        }
+
+        public async Task<GenerationWithTrimsDto?> GetGenerationVariantWithTrimsAsync(int generationVariantId)
+        {
+            var variant = await _dbContext.GenerationVariants
+                .Include(v => v.Model)
+                    .ThenInclude(m => m!.Brand)
+                .Include(v => v.Images)
+                .Include(v => v.BodyStyle)
+                .Include(v => v.Trims)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(v => v.Id == generationVariantId);
+
+            if (variant?.Model?.Brand == null)
+            {
+                return null;
+            }
+
+            return new GenerationWithTrimsDto
+            {
+                Id = variant.Id,
+                GenerationVariantId = variant.Id,
+                LegacyGenerationId = variant.ModelId,
+                Name = variant.Name,
+                DisplayName = variant.Name,
+                YearFrom = variant.YearFrom,
+                YearTo = variant.YearTo,
+                PhotoUrl = variant.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? variant.PhotoUrl,
+                Variants = new List<GenerationVariantDto>
+                {
+                    new()
+                    {
+                        Id = variant.Id,
+                        GenerationId = variant.ModelId,
+                        Name = variant.Name,
+                        VariantType = variant.VariantType.ToString(),
+                        BodyStyleId = variant.BodyStyleId,
+                        BodyStyleName = variant.BodyStyle?.Name ?? string.Empty,
+                        DoorsCount = variant.DoorsCount,
+                        YearFrom = variant.YearFrom,
+                        YearTo = variant.YearTo,
+                        IsDefault = true,
+                        PhotoUrl = variant.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? variant.PhotoUrl,
+                        Images = variant.Images
+                            .OrderByDescending(i => i.IsPrimary)
+                            .ThenBy(i => i.SortOrder)
+                            .ThenBy(i => i.Id)
+                            .Select(i => new GenerationImageDto
+                            {
+                                Id = i.Id,
+                                GenerationVariantId = i.GenerationVariantId,
+                                Url = i.Url,
+                                IsPrimary = i.IsPrimary,
+                                SortOrder = i.SortOrder,
+                                CreatedAt = i.CreatedAt
+                            })
+                            .ToList()
+                    }
+                },
+                Brand = new BrandDto
+                {
+                    Id = variant.Model.Brand!.Id,
+                    Name = variant.Model.Brand.Name
+                },
+                Model = new ModelDto
+                {
+                    Id = variant.Model.Id,
+                    Name = variant.Model.Name,
+                    BodyType = variant.BodyStyle?.Name ?? string.Empty,
+                    BrandId = variant.Model.BrandId
                 },
                 Trims = variant.Trims
                     .Select(t => new TrimBasicDto
@@ -250,28 +224,23 @@ namespace CarComparisonApi.Services
             var trim = await _dbContext.Trims
                 .Include(t => t.TechnicalDetails)
                 .Include(t => t.GenerationVariant)
+                .Include(t => t.GenerationVariant)
                     .ThenInclude(v => v!.Images)
                 .Include(t => t.GenerationVariant)
                     .ThenInclude(v => v!.BodyStyle)
                 .Include(t => t.GenerationVariant)
-                    .ThenInclude(v => v!.Generation)
-                        .ThenInclude(g => g!.Variants)
-                            .ThenInclude(v => v.Images)
-                .Include(t => t.GenerationVariant)
-                    .ThenInclude(v => v!.Generation)
-                        .ThenInclude(g => g!.Model)
-                            .ThenInclude(m => m!.Brand)
+                    .ThenInclude(v => v!.Model)
+                        .ThenInclude(m => m!.Brand)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == trimId);
 
-            if (trim?.GenerationVariant?.Generation?.Model?.Brand == null)
+            if (trim?.GenerationVariant?.Model?.Brand == null)
             {
                 return null;
             }
 
             var variant = trim.GenerationVariant;
-            var generation = variant!.Generation!;
-            var model = generation.Model!;
+            var model = variant!.Model!;
             var brand = model.Brand!;
 
             return new TrimFullDto
@@ -283,15 +252,15 @@ namespace CarComparisonApi.Services
                 SeatsCount = trim.SeatsCount,
                 Generation = new GenerationBasicDto
                 {
-                    Id = generation.Id,
-                    Name = generation.Name,
-                    YearFrom = generation.YearFrom,
-                    YearTo = generation.YearTo,
-                    PhotoUrl = generation.Variants
-                        .OrderByDescending(v => v.IsDefault)
-                        .Select(v => v.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? v.PhotoUrl)
+                    Id = model.Id,
+                    Name = model.Name,
+                    YearFrom = variant.YearFrom,
+                    YearTo = variant.YearTo,
+                    PhotoUrl = variant.Images
+                        .OrderBy(i => i.SortOrder)
+                        .Select(i => i.Url)
                         .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u))
-                        ?? generation.PhotoUrl
+                        ?? variant.PhotoUrl
                 },
                 GenerationVariant = new GenerationVariantBasicDto
                 {
@@ -312,7 +281,41 @@ namespace CarComparisonApi.Services
                     Id = brand.Id,
                     Name = brand.Name
                 },
-                TechnicalDetails = trim.TechnicalDetails
+                TechnicalDetails = trim.TechnicalDetails != null ? new TechnicalDetailsFullDto
+                {
+                    MaxSpeed = trim.TechnicalDetails.MaxSpeed,
+                    Acceleration0To100 = trim.TechnicalDetails.Acceleration0To100,
+                    EngineCode = trim.TechnicalDetails.EngineCode,
+                    EngineType = trim.TechnicalDetails.EngineType,
+                    CylindersCount = trim.TechnicalDetails.CylindersCount,
+                    ValvesCount = trim.TechnicalDetails.ValvesCount,
+                    CompressionRatio = trim.TechnicalDetails.CompressionRatio,
+                    FuelType = trim.TechnicalDetails.FuelType,
+                    Power = trim.TechnicalDetails.Power,
+                    Torque = trim.TechnicalDetails.Torque,
+                    MaxPowerAtRPM = trim.TechnicalDetails.MaxPowerAtRPM,
+                    MaxTorqueAtRPM = trim.TechnicalDetails.MaxTorqueAtRPM,
+                    EngineDisplacement = trim.TechnicalDetails.EngineDisplacement,
+                    DriveType = trim.TechnicalDetails.DriveType,
+                    FuelConsumptionCity = trim.TechnicalDetails.FuelConsumptionCity,
+                    FuelConsumptionMixed = trim.TechnicalDetails.FuelConsumptionMixed,
+                    FuelConsumptionHighway = trim.TechnicalDetails.FuelConsumptionHighway,
+                    ElectricRange = trim.TechnicalDetails.ElectricRange,
+                    Length = trim.TechnicalDetails.Length,
+                    Width = trim.TechnicalDetails.Width,
+                    Height = trim.TechnicalDetails.Height,
+                    Wheelbase = trim.TechnicalDetails.Wheelbase,
+                    FrontTrack = trim.TechnicalDetails.FrontTrack,
+                    RearTrack = trim.TechnicalDetails.RearTrack,
+                    CurbWeight = trim.TechnicalDetails.CurbWeight,
+                    GrossWeight = trim.TechnicalDetails.GrossWeight,
+                    FuelTankCapacity = trim.TechnicalDetails.FuelTankCapacity,
+                    TurningCircle = trim.TechnicalDetails.TurningCircle,
+                    FrontBrakes = trim.TechnicalDetails.FrontBrakes,
+                    RearBrakes = trim.TechnicalDetails.RearBrakes,
+                    FrontSuspension = trim.TechnicalDetails.FrontSuspension,
+                    RearSuspension = trim.TechnicalDetails.RearSuspension
+                } : null
             };
         }
 
@@ -524,6 +527,13 @@ namespace CarComparisonApi.Services
                 .OrderBy(x => x)
                 .ToListAsync();
 
+            var variantTypes = await query
+                .Where(x => x.VariantType != null)
+                .Select(x => x.VariantType!.ToString())
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync();
+
             var transmissionTypes = await query
                 .Where(x => !string.IsNullOrEmpty(x.TransmissionType))
                 .Select(x => x.TransmissionType!)
@@ -541,14 +551,15 @@ namespace CarComparisonApi.Services
             return new SearchFacetsDto
             {
                 BodyStyles = bodyStyles
-                    .ConvertAll(x => new BodyStyleOptionDto
+                    .Select(x => new BodyStyleOptionDto
                     {
                         Id = x.BodyStyleId!.Value,
                         Name = x.BodyStyleName!
                     })
-,
-                TransmissionTypes = transmissionTypes,
-                FuelTypes = fuelTypes
+                    .ToList(),
+                VariantTypes = variantTypes.Where(x => !string.IsNullOrEmpty(x)).ToList(),
+                TransmissionTypes = transmissionTypes.Where(x => !string.IsNullOrEmpty(x)).ToList(),
+                FuelTypes = fuelTypes.Where(x => !string.IsNullOrEmpty(x)).ToList()
             };
         }
 
@@ -556,9 +567,8 @@ namespace CarComparisonApi.Services
         {
             return await _dbContext.CarModels
                 .Where(m => m.BrandId == brandId)
-                .Include(m => m.Generations)
-                    .ThenInclude(g => g.Variants)
-                        .ThenInclude(v => v.Trims)
+                .Include(m => m.GenerationVariants)
+                    .ThenInclude(v => v.Trims)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -566,9 +576,8 @@ namespace CarComparisonApi.Services
         public async Task<CarModel?> GetModelByIdAsync(int id)
         {
             return await _dbContext.CarModels
-                .Include(m => m.Generations)
-                    .ThenInclude(g => g.Variants)
-                        .ThenInclude(v => v.Trims)
+                .Include(m => m.GenerationVariants)
+                    .ThenInclude(v => v.Trims)
                             .ThenInclude(t => t.TechnicalDetails)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id);
@@ -576,22 +585,30 @@ namespace CarComparisonApi.Services
 
         public async Task<IEnumerable<Generation>> GetGenerationsByModelIdAsync(int modelId)
         {
-            return await _dbContext.Generations
-                .Where(g => g.ModelId == modelId)
-                .Include(g => g.Variants)
-                    .ThenInclude(v => v.BodyStyle)
-                .Include(g => g.Variants)
-                    .ThenInclude(v => v.Images)
-                .Include(g => g.Variants)
-                        .ThenInclude(v => v.Trims)
+            var variants = await _dbContext.GenerationVariants
+                .Where(v => v.ModelId == modelId)
+                .Include(v => v.BodyStyle)
+                .Include(v => v.Images)
+                .Include(v => v.Trims)
                 .AsNoTracking()
                 .ToListAsync();
+
+            return variants.Select(variant => new Generation
+            {
+                Id = variant.Id,
+                Name = variant.Name,
+                ModelId = variant.ModelId,
+                YearFrom = variant.YearFrom,
+                YearTo = variant.YearTo,
+                PhotoUrl = variant.PhotoUrl,
+                Variants = new List<GenerationVariant> { variant }
+            }).ToList();
         }
 
             public async Task<IEnumerable<GenerationVariantDto>> GetGenerationVariantsByModelIdAsync(int modelId)
             {
                 var variants = await _dbContext.GenerationVariants
-                    .Where(variant => variant.Generation != null && variant.Generation.ModelId == modelId)
+                    .Where(variant => variant.ModelId == modelId)
                     .Include(variant => variant.BodyStyle)
                     .Include(variant => variant.Images)
                     .AsNoTracking()
@@ -602,7 +619,7 @@ namespace CarComparisonApi.Services
                 return variants.ConvertAll(variant => new GenerationVariantDto
                 {
                     Id = variant.Id,
-                    GenerationId = variant.GenerationId,
+                    GenerationId = variant.ModelId,
                     Name = variant.Name,
                     VariantType = variant.VariantType.ToString(),
                     BodyStyleId = variant.BodyStyleId,
@@ -631,21 +648,31 @@ namespace CarComparisonApi.Services
 
         public async Task<Generation?> GetGenerationByIdAsync(int id)
         {
-            return await _dbContext.Generations
-                .Include(g => g.Variants)
-                    .ThenInclude(v => v.BodyStyle)
-                .Include(g => g.Variants)
-                    .ThenInclude(v => v.Images)
-                .Include(g => g.Variants)
-                        .ThenInclude(v => v.Trims)
+            var variant = await _dbContext.GenerationVariants
+                .Include(v => v.BodyStyle)
+                .Include(v => v.Images)
+                .Include(v => v.Trims)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(g => g.Id == id);
+                .FirstOrDefaultAsync(v => v.Id == id);
+
+            return variant == null
+                ? null
+                : new Generation
+                {
+                    Id = variant.Id,
+                    Name = variant.Name,
+                    ModelId = variant.ModelId,
+                    YearFrom = variant.YearFrom,
+                    YearTo = variant.YearTo,
+                    PhotoUrl = variant.PhotoUrl,
+                    Variants = new List<GenerationVariant> { variant }
+                };
         }
 
         public async Task<IEnumerable<Trim>> GetTrimsByGenerationIdAsync(int generationId)
         {
             return await _dbContext.Trims
-                .Where(t => t.GenerationVariant != null && t.GenerationVariant.GenerationId == generationId)
+                .Where(t => t.GenerationVariant != null && t.GenerationVariant.ModelId == generationId)
                 .Include(t => t.TechnicalDetails)
                 .AsNoTracking()
                 .ToListAsync();
@@ -689,18 +716,15 @@ namespace CarComparisonApi.Services
         {
             var data = await _dbContext.CarBrands
                 .Include(b => b.Models)
-                    .ThenInclude(m => m.Generations)
-                        .ThenInclude(g => g.Variants)
-                            .ThenInclude(v => v.Images)
+                    .ThenInclude(m => m.GenerationVariants)
+                        .ThenInclude(v => v.Images)
                 .Include(b => b.Models)
-                    .ThenInclude(m => m.Generations)
-                        .ThenInclude(g => g.Variants)
-                            .ThenInclude(v => v.BodyStyle)
+                    .ThenInclude(m => m.GenerationVariants)
+                        .ThenInclude(v => v.BodyStyle)
                 .Include(b => b.Models)
-                    .ThenInclude(m => m.Generations)
-                        .ThenInclude(g => g.Variants)
-                            .ThenInclude(v => v.Trims)
-                                .ThenInclude(t => t.TechnicalDetails)
+                    .ThenInclude(m => m.GenerationVariants)
+                        .ThenInclude(v => v.Trims)
+                            .ThenInclude(t => t.TechnicalDetails)
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -726,112 +750,85 @@ namespace CarComparisonApi.Services
                         continue;
                     }
 
-                    var filteredGenerations = new List<Generation>();
+                    var filteredVariants = new List<GenerationVariant>();
 
-                    foreach (var genItem in modelItem.Generations)
+                    foreach (var variantItem in modelItem.GenerationVariants)
                     {
                         if (!string.IsNullOrEmpty(generation) &&
-                            !genItem.Name.Contains(generation, StringComparison.OrdinalIgnoreCase))
+                            !variantItem.Name.Contains(generation, StringComparison.OrdinalIgnoreCase))
                         {
                             continue;
                         }
 
-                        if (minYear.HasValue && genItem.YearTo < minYear.Value)
+                        if (minYear.HasValue && variantItem.YearTo < minYear.Value)
                         {
                             continue;
                         }
 
-                        if (maxYear.HasValue && genItem.YearFrom > maxYear.Value)
+                        if (maxYear.HasValue && variantItem.YearFrom > maxYear.Value)
+                        {
+                            continue;
+                        }
+                        if (variantType.HasValue && variantItem.VariantType != variantType.Value)
                         {
                             continue;
                         }
 
-                        var filteredVariants = new List<GenerationVariant>();
-
-                        var variants = genItem.Variants.AsEnumerable();
-
-                        if (variantType.HasValue)
-                        {
-                            variants = variants.Where(v => v.VariantType == variantType.Value);
-                        }
-
-                        if (bodyStyleId.HasValue)
-                        {
-                            variants = variants.Where(v => v.BodyStyleId == bodyStyleId.Value);
-                        }
-
-                        foreach (var variant in variants)
-                        {
-                            var filteredTrims = variant.Trims.AsEnumerable();
-
-                            if (!string.IsNullOrEmpty(transmission))
-                            {
-                                filteredTrims = filteredTrims.Where(t =>
-                                    t.TransmissionType?.Contains(transmission, StringComparison.OrdinalIgnoreCase) == true);
-                            }
-
-                            if (!string.IsNullOrEmpty(fuelType))
-                            {
-                                filteredTrims = filteredTrims.Where(t =>
-                                    t.TechnicalDetails?.FuelType?.Contains(fuelType, StringComparison.OrdinalIgnoreCase) == true);
-                            }
-
-                            var trimsList = filteredTrims.ToList();
-                            if (trimsList.Count == 0)
-                            {
-                                continue;
-                            }
-
-                            filteredVariants.Add(new GenerationVariant
-                            {
-                                Id = variant.Id,
-                                GenerationId = genItem.Id,
-                                Name = variant.Name,
-                                VariantType = variant.VariantType,
-                                YearFrom = variant.YearFrom,
-                                YearTo = variant.YearTo,
-                                IsDefault = variant.IsDefault,
-                                PhotoUrl = variant.PhotoUrl,
-                                BodyStyleId = variant.BodyStyleId,
-                                BodyStyle = variant.BodyStyle,
-                                DoorsCount = variant.DoorsCount,
-                                Images = variant.Images,
-                                Trims = trimsList.ConvertAll(t => new Trim
-                                {
-                                    Id = t.Id,
-                                    Name = t.Name,
-                                    GenerationVariantId = variant.Id,
-                                    TransmissionType = t.TransmissionType,
-                                    DoorsCount = t.DoorsCount,
-                                    SeatsCount = t.SeatsCount,
-                                    TechnicalDetails = null,
-                                    Reviews = new List<Review>()
-                                })
-                            });
-                        }
-
-                        if (filteredVariants.Count == 0)
+                        if (bodyStyleId.HasValue && variantItem.BodyStyleId != bodyStyleId.Value)
                         {
                             continue;
                         }
 
-                        filteredGenerations.Add(new Generation
+                        var filteredTrims = variantItem.Trims.AsEnumerable();
+
+                        if (!string.IsNullOrEmpty(transmission))
                         {
-                            Id = genItem.Id,
-                            Name = genItem.Name,
-                            ModelId = genItem.ModelId,
-                            YearFrom = genItem.YearFrom,
-                            YearTo = genItem.YearTo,
-                            PhotoUrl = genItem.Variants
-                                .OrderByDescending(v => v.IsDefault)
-                                .Select(v => v.Images.FirstOrDefault(i => i.IsPrimary)?.Url ?? v.PhotoUrl)
-                                .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u))
-                                ?? genItem.PhotoUrl,
-                            Variants = filteredVariants
+                            filteredTrims = filteredTrims.Where(t =>
+                                t.TransmissionType?.Contains(transmission, StringComparison.OrdinalIgnoreCase) == true);
+                        }
+
+                        if (!string.IsNullOrEmpty(fuelType))
+                        {
+                            filteredTrims = filteredTrims.Where(t =>
+                                t.TechnicalDetails?.FuelType?.Contains(fuelType, StringComparison.OrdinalIgnoreCase) == true);
+                        }
+
+                        var trimsList = filteredTrims.ToList();
+                        if (trimsList.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        filteredVariants.Add(new GenerationVariant
+                        {
+                            Id = variantItem.Id,
+                            ModelId = modelItem.Id,
+                            Model = modelItem,
+                            Name = variantItem.Name,
+                            VariantType = variantItem.VariantType,
+                            YearFrom = variantItem.YearFrom,
+                            YearTo = variantItem.YearTo,
+                            IsDefault = variantItem.IsDefault,
+                            PhotoUrl = variantItem.PhotoUrl,
+                            BodyStyleId = variantItem.BodyStyleId,
+                            BodyStyle = variantItem.BodyStyle,
+                            DoorsCount = variantItem.DoorsCount,
+                            Images = variantItem.Images,
+                            Trims = trimsList.ConvertAll(t => new Trim
+                            {
+                                Id = t.Id,
+                                Name = t.Name,
+                                GenerationVariantId = variantItem.Id,
+                                TransmissionType = t.TransmissionType,
+                                DoorsCount = t.DoorsCount,
+                                SeatsCount = t.SeatsCount,
+                                TechnicalDetails = null,
+                                Reviews = new List<Review>()
+                            })
                         });
                     }
 
-                    if (filteredGenerations.Count == 0)
+                    if (filteredVariants.Count == 0)
                     {
                         continue;
                     }
@@ -842,7 +839,7 @@ namespace CarComparisonApi.Services
                         Name = modelItem.Name,
                         BrandId = modelItem.BrandId,
                         BodyType = modelItem.BodyType,
-                        Generations = filteredGenerations
+                        GenerationVariants = filteredVariants
                     });
                 }
 

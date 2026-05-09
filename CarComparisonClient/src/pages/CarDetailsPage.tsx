@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { SiteFooter } from '../components/SiteFooter'
 import { SiteHeader } from '../components/SiteHeader'
 import {
@@ -159,6 +159,7 @@ const normalizeReviews = (
 export function CarDetailsPage() {
   const { generationId, generationVariantId } = useParams()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const [pageData, setPageData] = useState<PageData | null>(null)
   const [selectedPhoto, setSelectedPhoto] = useState('')
@@ -454,7 +455,11 @@ export function CarDetailsPage() {
                   </thead>
                   <tbody>
                     {visibleTrims.map((trim) => (
-                      <tr key={trim.id}>
+                      <tr
+                        key={trim.id}
+                        className="clickable-row"
+                        onClick={() => navigate(`/cars/variants/${trim.generationVariantId}/trims/${trim.id}`)}
+                      >
                         <td>{trim.name}</td>
                         <td>{trim.transmissionType || '—'}</td>
                         <td>{formatPower(trim.power)}</td>

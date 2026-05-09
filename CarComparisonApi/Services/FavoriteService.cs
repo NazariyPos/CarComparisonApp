@@ -28,15 +28,14 @@ namespace CarComparisonApi.Services
                         .ThenInclude(v => v!.Images)
                 .Include(f => f.Trim)
                     .ThenInclude(t => t!.GenerationVariant)
-                        .ThenInclude(v => v!.Generation)
-                            .ThenInclude(g => g!.Model)
-                                .ThenInclude(m => m!.Brand)
+                        .ThenInclude(v => v!.Model)
+                            .ThenInclude(m => m!.Brand)
                 .OrderByDescending(f => f.AddedAt)
                 .AsNoTracking()
                 .ToListAsync();
 
             return favorites
-                .Where(f => f.Trim?.GenerationVariant?.Generation?.Model?.Brand != null)
+                .Where(f => f.Trim?.GenerationVariant?.Model?.Brand != null)
                 .Select(MapToDto)
                 .ToList();
         }
@@ -73,13 +72,12 @@ namespace CarComparisonApi.Services
                         .ThenInclude(v => v!.Images)
                 .Include(f => f.Trim)
                     .ThenInclude(t => t!.GenerationVariant)
-                        .ThenInclude(v => v!.Generation)
-                            .ThenInclude(g => g!.Model)
-                                .ThenInclude(m => m!.Brand)
+                        .ThenInclude(v => v!.Model)
+                            .ThenInclude(m => m!.Brand)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
 
-            return favorite?.Trim?.GenerationVariant?.Generation?.Model?.Brand == null
+            return favorite?.Trim?.GenerationVariant?.Model?.Brand == null
                 ? null
                 : MapToDto(favorite);
         }
@@ -110,21 +108,20 @@ namespace CarComparisonApi.Services
         {
             var trim = favorite.Trim!;
             var variant = trim.GenerationVariant!;
-            var generation = variant.Generation!;
-            var model = generation.Model!;
+            var model = variant.Model!;
             var brand = model.Brand!;
 
             var photoUrl = variant.Images.FirstOrDefault(i => i.IsPrimary)?.Url
                 ?? variant.PhotoUrl
-                ?? generation.PhotoUrl;
+                ?? variant.PhotoUrl;
 
             return new FavoriteDto
             {
                 Id = favorite.Id,
                 TrimId = trim.Id,
                 TrimName = trim.Name,
-                GenerationId = generation.Id,
-                GenerationName = generation.Name,
+                GenerationId = variant.Id,
+                GenerationName = variant.Name,
                 ModelId = model.Id,
                 ModelName = model.Name,
                 BrandId = brand.Id,

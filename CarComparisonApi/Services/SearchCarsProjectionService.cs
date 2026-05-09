@@ -58,25 +58,23 @@ public class SearchCarsProjectionService : ISearchCarsProjectionService
             .Include(t => t.GenerationVariant)
                 .ThenInclude(v => v!.Images)
             .Include(t => t.GenerationVariant)
-                .ThenInclude(v => v!.Generation)
-                    .ThenInclude(g => g!.Model)
-                        .ThenInclude(m => m!.Brand)
+                .ThenInclude(v => v!.Model)
+                    .ThenInclude(m => m!.Brand)
             .Include(t => t.GenerationVariant)
                 .ThenInclude(v => v!.BodyStyle)
             .ToListAsync(cancellationToken);
 
         var rows = trims
-            .Where(t => t.GenerationVariant?.Generation?.Model?.Brand != null)
+            .Where(t => t.GenerationVariant?.Model?.Brand != null)
             .Select(t =>
             {
-                var generation = t.GenerationVariant!.Generation!;
-                var model = generation.Model!;
+                var model = t.GenerationVariant!.Model!;
                 var brand = model.Brand!;
                 var variant = t.GenerationVariant!;
 
                 var photoUrl = variant.Images.FirstOrDefault(i => i.IsPrimary)?.Url
                     ?? variant.PhotoUrl
-                    ?? generation.PhotoUrl;
+                    ?? variant.PhotoUrl;
 
                 return new SearchCar
                 {
@@ -85,8 +83,8 @@ public class SearchCarsProjectionService : ISearchCarsProjectionService
                     BrandName = brand.Name,
                     ModelId = model.Id,
                     ModelName = model.Name,
-                    GenerationId = generation.Id,
-                    GenerationName = generation.Name,
+                    GenerationId = variant.Id,
+                    GenerationName = variant.Name,
                     TrimName = t.Name,
                     GenerationVariantId = variant.Id,
                     GenerationVariantName = variant.Name,

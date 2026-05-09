@@ -35,7 +35,70 @@ namespace CarComparisonApi.Controllers
         public record CreateGenerationRequest(string Name, int YearFrom, int YearTo, string? PhotoUrl);
         public record CreateVariantRequest(string Name, string VariantType, int? BodyStyleId, int DoorsCount, int YearFrom, int YearTo, bool IsDefault, string? PhotoUrl);
         public record CreateTrimRequest(string Name, string? TransmissionType, int? DoorsCount, int? SeatsCount);
-        public record CreateTechnicalDetailsRequest(string? FuelType, int? Power, string? DriveType);
+        public record CreateTechnicalDetailsRequest(
+            int? MaxSpeed,
+            decimal? Acceleration0To100,
+            string? EngineCode,
+            string? EngineType,
+            int? CylindersCount,
+            int? ValvesCount,
+            decimal? CompressionRatio,
+            string? FuelType,
+            int? Power,
+            int? Torque,
+            int? MaxPowerAtRPM,
+            int? MaxTorqueAtRPM,
+            decimal? EngineDisplacement,
+            string? DriveType,
+            decimal? FuelConsumptionCity,
+            decimal? FuelConsumptionMixed,
+            decimal? FuelConsumptionHighway,
+            decimal? ElectricRange,
+            decimal? Length,
+            decimal? Width,
+            decimal? Height,
+            decimal? Wheelbase,
+            decimal? FrontTrack,
+            decimal? RearTrack,
+            decimal? CurbWeight,
+            decimal? GrossWeight,
+            decimal? FuelTankCapacity,
+            decimal? TurningCircle,
+            string? FrontBrakes,
+            string? RearBrakes,
+            string? FrontSuspension,
+            string? RearSuspension
+        );
+
+        // Дозволені значення для контролю якості даних
+        private static readonly HashSet<string> AllowedBodyTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Седан", "Купе", "Універсал", "Хетчбек", "Позашляховик", "Мінівен", "Кабріолет"
+        };
+
+        private static readonly HashSet<string> AllowedFuelTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Бензин", "Дизель", "Гібрид", "Електро", "LPG"
+        };
+
+        private static readonly HashSet<string> AllowedDriveTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "FWD", "RWD", "AWD", "4WD"
+        };
+
+        [HttpGet("body-styles")]
+        public async Task<IActionResult> GetBodyStyles()
+        {
+            if (!await IsCurrentUserAdminAsync()) return Forbid();
+            
+            var bodyStyles = await _dbContext.BodyStyles
+                .AsNoTracking()
+                .OrderBy(b => b.Name)
+                .Select(b => new { id = b.Id, name = b.Name })
+                .ToListAsync();
+
+            return Ok(bodyStyles);
+        }
 
         [HttpPost("brands")]
         public async Task<IActionResult> CreateBrand([FromBody] CreateBrandRequest req)
@@ -68,6 +131,12 @@ namespace CarComparisonApi.Controllers
             if (brand == null) return NotFound("Brand not found");
             if (string.IsNullOrWhiteSpace(req.Name)) return BadRequest("Name is required");
 
+            // Валідація типу кузова
+            if (!string.IsNullOrWhiteSpace(req.BodyType) && !AllowedBodyTypes.Contains(req.BodyType))
+            {
+                return BadRequest($"Invalid body type. Allowed values: {string.Join(", ", AllowedBodyTypes)}");
+            }
+
             var normalizedName = req.Name.Trim();
             var existingModel = await _dbContext.CarModels
                 .FirstOrDefaultAsync(model => model.BrandId == brandId && model.Name == normalizedName);
@@ -84,38 +153,13 @@ namespace CarComparisonApi.Controllers
             return Ok(new { id = model.Id, name = model.Name, brandId = brandId });
         }
 
-        [HttpPost("models/{modelId}/generations")]
-        public async Task<IActionResult> CreateGeneration(int modelId, [FromBody] CreateGenerationRequest req)
+        [HttpPost("models/{modelId}/variants")]
+        public async Task<IActionResult> CreateGenerationVariant(int modelId, [FromBody] CreateVariantRequest req)
         {
             if (!await IsCurrentUserAdminAsync()) return Forbid();
             if (modelId <= 0) return BadRequest("Invalid modelId");
             var model = await _dbContext.CarModels.FindAsync(modelId);
             if (model == null) return NotFound("Model not found");
-            if (string.IsNullOrWhiteSpace(req.Name)) return BadRequest("Name is required");
-
-            var normalizedName = req.Name.Trim();
-            var existingGeneration = await _dbContext.Generations
-                .FirstOrDefaultAsync(generation => generation.ModelId == modelId && generation.Name == normalizedName);
-
-            if (existingGeneration != null)
-            {
-                return Conflict(new { message = "Generation already exists for this model", id = existingGeneration.Id, name = existingGeneration.Name, modelId });
-            }
-
-            var generation = new Generation { Name = normalizedName, ModelId = modelId, YearFrom = req.YearFrom, YearTo = req.YearTo, PhotoUrl = req.PhotoUrl };
-            await _dbContext.Generations.AddAsync(generation);
-            await _dbContext.SaveChangesAsync();
-
-            return Ok(new { id = generation.Id, name = generation.Name, modelId = modelId });
-        }
-
-        [HttpPost("generations/{generationId}/variants")]
-        public async Task<IActionResult> CreateGenerationVariant(int generationId, [FromBody] CreateVariantRequest req)
-        {
-            if (!await IsCurrentUserAdminAsync()) return Forbid();
-            if (generationId <= 0) return BadRequest("Invalid generationId");
-            var generation = await _dbContext.Generations.FindAsync(generationId);
-            if (generation == null) return NotFound("Generation not found");
             if (string.IsNullOrWhiteSpace(req.Name)) return BadRequest("Name is required");
 
             if (!Enum.TryParse<GenerationVariantType>(req.VariantType, true, out var variantType))
@@ -131,7 +175,7 @@ namespace CarComparisonApi.Controllers
             var normalizedName = req.Name.Trim();
             var existingVariant = await _dbContext.GenerationVariants
                 .FirstOrDefaultAsync(variant =>
-                    variant.GenerationId == generationId &&
+                    variant.ModelId == modelId &&
                     variant.Name == normalizedName &&
                     variant.VariantType == variantType &&
                     variant.BodyStyleId == req.BodyStyleId.Value &&
@@ -139,13 +183,13 @@ namespace CarComparisonApi.Controllers
 
             if (existingVariant != null)
             {
-                return Conflict(new { message = "Variant already exists for this generation", id = existingVariant.Id, name = existingVariant.Name, generationId });
+                return Conflict(new { message = "Variant already exists for this model", id = existingVariant.Id, name = existingVariant.Name, modelId });
             }
 
             var variant = new GenerationVariant
             {
                 Name = normalizedName,
-                GenerationId = generationId,
+                ModelId = modelId,
                 VariantType = variantType,
                 BodyStyleId = req.BodyStyleId.Value,
                 DoorsCount = req.DoorsCount,
@@ -158,7 +202,7 @@ namespace CarComparisonApi.Controllers
             await _dbContext.GenerationVariants.AddAsync(variant);
             await _dbContext.SaveChangesAsync();
 
-            return Ok(new { id = variant.Id, name = variant.Name, generationId = generationId });
+            return Ok(new { id = variant.Id, name = variant.Name, modelId = modelId });
         }
 
         [HttpPost("variants/{variantId}/trims")]
@@ -206,14 +250,55 @@ namespace CarComparisonApi.Controllers
             var trim = await _dbContext.Trims.FindAsync(trimId);
             if (trim == null) return NotFound("Trim not found");
 
+            // Валідація типу палива
+            if (!string.IsNullOrWhiteSpace(req.FuelType) && !AllowedFuelTypes.Contains(req.FuelType))
+            {
+                return BadRequest($"Invalid fuel type. Allowed values: {string.Join(", ", AllowedFuelTypes)}");
+            }
+
+            // Валідація приводу
+            if (!string.IsNullOrWhiteSpace(req.DriveType) && !AllowedDriveTypes.Contains(req.DriveType))
+            {
+                return BadRequest($"Invalid drive type. Allowed values: {string.Join(", ", AllowedDriveTypes)}");
+            }
+
             var existingDetails = await _dbContext.TechnicalDetails
                 .FirstOrDefaultAsync(details => details.TrimId == trimId);
 
             if (existingDetails != null)
             {
+                existingDetails.MaxSpeed = req.MaxSpeed;
+                existingDetails.Acceleration0To100 = req.Acceleration0To100;
+                existingDetails.EngineCode = req.EngineCode?.Trim();
+                existingDetails.EngineType = req.EngineType?.Trim();
+                existingDetails.CylindersCount = req.CylindersCount;
+                existingDetails.ValvesCount = req.ValvesCount;
+                existingDetails.CompressionRatio = req.CompressionRatio;
                 existingDetails.FuelType = req.FuelType?.Trim();
                 existingDetails.Power = req.Power;
+                existingDetails.Torque = req.Torque;
+                existingDetails.MaxPowerAtRPM = req.MaxPowerAtRPM;
+                existingDetails.MaxTorqueAtRPM = req.MaxTorqueAtRPM;
+                existingDetails.EngineDisplacement = req.EngineDisplacement;
                 existingDetails.DriveType = req.DriveType?.Trim();
+                existingDetails.FuelConsumptionCity = req.FuelConsumptionCity;
+                existingDetails.FuelConsumptionMixed = req.FuelConsumptionMixed;
+                existingDetails.FuelConsumptionHighway = req.FuelConsumptionHighway;
+                existingDetails.ElectricRange = req.ElectricRange;
+                existingDetails.Length = req.Length;
+                existingDetails.Width = req.Width;
+                existingDetails.Height = req.Height;
+                existingDetails.Wheelbase = req.Wheelbase;
+                existingDetails.FrontTrack = req.FrontTrack;
+                existingDetails.RearTrack = req.RearTrack;
+                existingDetails.CurbWeight = req.CurbWeight;
+                existingDetails.GrossWeight = req.GrossWeight;
+                existingDetails.FuelTankCapacity = req.FuelTankCapacity;
+                existingDetails.TurningCircle = req.TurningCircle;
+                existingDetails.FrontBrakes = req.FrontBrakes?.Trim();
+                existingDetails.RearBrakes = req.RearBrakes?.Trim();
+                existingDetails.FrontSuspension = req.FrontSuspension?.Trim();
+                existingDetails.RearSuspension = req.RearSuspension?.Trim();
 
                 await _dbContext.SaveChangesAsync();
                 return Ok(new { id = existingDetails.Id, trimId });
@@ -222,9 +307,38 @@ namespace CarComparisonApi.Controllers
             var details = new TechnicalDetails
             {
                 TrimId = trimId,
+                MaxSpeed = req.MaxSpeed,
+                Acceleration0To100 = req.Acceleration0To100,
+                EngineCode = req.EngineCode?.Trim(),
+                EngineType = req.EngineType?.Trim(),
+                CylindersCount = req.CylindersCount,
+                ValvesCount = req.ValvesCount,
+                CompressionRatio = req.CompressionRatio,
                 FuelType = req.FuelType?.Trim(),
                 Power = req.Power,
-                DriveType = req.DriveType?.Trim()
+                Torque = req.Torque,
+                MaxPowerAtRPM = req.MaxPowerAtRPM,
+                MaxTorqueAtRPM = req.MaxTorqueAtRPM,
+                EngineDisplacement = req.EngineDisplacement,
+                DriveType = req.DriveType?.Trim(),
+                FuelConsumptionCity = req.FuelConsumptionCity,
+                FuelConsumptionMixed = req.FuelConsumptionMixed,
+                FuelConsumptionHighway = req.FuelConsumptionHighway,
+                ElectricRange = req.ElectricRange,
+                Length = req.Length,
+                Width = req.Width,
+                Height = req.Height,
+                Wheelbase = req.Wheelbase,
+                FrontTrack = req.FrontTrack,
+                RearTrack = req.RearTrack,
+                CurbWeight = req.CurbWeight,
+                GrossWeight = req.GrossWeight,
+                FuelTankCapacity = req.FuelTankCapacity,
+                TurningCircle = req.TurningCircle,
+                FrontBrakes = req.FrontBrakes?.Trim(),
+                RearBrakes = req.RearBrakes?.Trim(),
+                FrontSuspension = req.FrontSuspension?.Trim(),
+                RearSuspension = req.RearSuspension?.Trim()
             };
 
             await _dbContext.TechnicalDetails.AddAsync(details);

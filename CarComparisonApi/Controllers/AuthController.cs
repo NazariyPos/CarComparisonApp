@@ -1,5 +1,6 @@
 using CarComparisonApi.Models.DTOs;
 using CarComparisonApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using System.IdentityModel.Tokens.Jwt;
@@ -81,6 +82,7 @@ namespace CarComparisonApi.Controllers
         /// Returns profile information for the currently authenticated user.
         /// </summary>
         /// <returns>Current user profile or an authorization error.</returns>
+        [Authorize]
         [HttpGet("me")]
         [SwaggerOperation(Summary = "Get current user profile")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -90,27 +92,18 @@ namespace CarComparisonApi.Controllers
         {
             try
             {
-                Console.WriteLine("=== GetCurrentUser called ===");
-                Console.WriteLine($"User.Identity.IsAuthenticated: {User.Identity?.IsAuthenticated}");
-                Console.WriteLine($"User.Identity.Name: {User.Identity?.Name}");
-
                 var userId = GetCurrentUserId();
-                Console.WriteLine($"GetCurrentUserId returned: {userId}");
 
                 if (userId == null)
                 {
-                    Console.WriteLine("Returning Unauthorized - userId is null");
                     return Unauthorized();
                 }
 
                 var user = await _authService.GetUserByIdAsync(userId.Value);
                 if (user == null)
                 {
-                    Console.WriteLine($"User with id {userId} not found");
                     return NotFound();
                 }
-
-                Console.WriteLine($"User found: {user.Login}");
 
                 return Ok(new
                 {

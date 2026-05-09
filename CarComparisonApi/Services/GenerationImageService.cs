@@ -29,10 +29,10 @@ namespace CarComparisonApi.Services
             _logger = logger;
         }
 
-        public async Task<IEnumerable<GenerationImageDto>> GetByVariantIdAsync(int generationId, int variantId)
+        public async Task<IEnumerable<GenerationImageDto>> GetByVariantIdAsync(int modelId, int variantId)
         {
             var images = await _dbContext.GenerationImages
-                .Where(i => i.GenerationVariantId == variantId && i.GenerationVariant!.GenerationId == generationId)
+            .Where(i => i.GenerationVariantId == variantId && i.GenerationVariant!.ModelId == modelId)
                 .OrderByDescending(i => i.IsPrimary)
                 .ThenBy(i => i.SortOrder)
                 .ThenBy(i => i.Id)
@@ -42,10 +42,10 @@ namespace CarComparisonApi.Services
             return images.Select(ToDto);
         }
 
-        public async Task<GenerationImageDto?> UploadAsync(int generationId, int variantId, IFormFile file, bool isPrimary, int? sortOrder)
+        public async Task<GenerationImageDto?> UploadAsync(int modelId, int variantId, IFormFile file, bool isPrimary, int? sortOrder)
         {
             var variant = await _dbContext.GenerationVariants
-                .FirstOrDefaultAsync(v => v.Id == variantId && v.GenerationId == generationId);
+            .FirstOrDefaultAsync(v => v.Id == variantId && v.ModelId == modelId);
 
             if (variant == null)
             {
@@ -73,7 +73,7 @@ namespace CarComparisonApi.Services
                 ? Path.Combine(_environment.ContentRootPath, "wwwroot")
                 : _environment.WebRootPath;
 
-            var relativeDirectory = Path.Combine("uploads", "generations", generationId.ToString(), "variants", variantId.ToString());
+            var relativeDirectory = Path.Combine("uploads", "models", modelId.ToString(), "variants", variantId.ToString());
             var physicalDirectory = Path.Combine(webRootPath, relativeDirectory);
             Directory.CreateDirectory(physicalDirectory);
 
@@ -98,7 +98,7 @@ namespace CarComparisonApi.Services
             }
 
             var computedSortOrder = sortOrder ?? await GetNextSortOrderAsync(variantId);
-            var url = $"/uploads/generations/{generationId}/variants/{variantId}/{fileName}";
+            var url = $"/uploads/models/{modelId}/variants/{variantId}/{fileName}";
 
             var entity = new GenerationImage
             {
@@ -117,26 +117,17 @@ namespace CarComparisonApi.Services
                 variant.PhotoUrl = entity.Url;
             }
 
-            if (variant.IsDefault)
-            {
-                var generation = await _dbContext.Generations.FirstAsync(g => g.Id == generationId);
-                if (isPrimary || string.IsNullOrWhiteSpace(generation.PhotoUrl))
-                {
-                    generation.PhotoUrl = entity.Url;
-                }
-            }
-
             await _dbContext.SaveChangesAsync();
 
-            _logger.LogInformation("Image uploaded for generation {GenerationId}, variant {VariantId}. ImageId: {ImageId}", generationId, variantId, entity.Id);
+            _logger.LogInformation("Image uploaded for model {ModelId}, variant {VariantId}. ImageId: {ImageId}", modelId, variantId, entity.Id);
             return ToDto(entity);
         }
 
-        public async Task<bool> DeleteAsync(int generationId, int variantId, int imageId)
+        public async Task<bool> DeleteAsync(int modelId, int variantId, int imageId)
         {
             var image = await _dbContext.GenerationImages
                 .Include(i => i.GenerationVariant)
-                .FirstOrDefaultAsync(i => i.Id == imageId && i.GenerationVariantId == variantId && i.GenerationVariant!.GenerationId == generationId);
+                .FirstOrDefaultAsync(i => i.Id == imageId && i.GenerationVariantId == variantId && i.GenerationVariant!.ModelId == modelId);
 
             if (image == null)
             {
@@ -164,18 +155,10 @@ namespace CarComparisonApi.Services
                     .ThenBy(i => i.Id)
                     .FirstOrDefaultAsync();
 
-                var variant = await _dbContext.GenerationVariants.FirstOrDefaultAsync(v => v.Id == variantId && v.GenerationId == generationId);
+                var variant = await _dbContext.GenerationVariants.FirstOrDefaultAsync(v => v.Id == variantId && v.ModelId == modelId);
                 if (variant != null)
                 {
                     variant.PhotoUrl = fallback?.Url;
-                    if (variant.IsDefault)
-                    {
-                        var generation = await _dbContext.Generations.FirstOrDefaultAsync(g => g.Id == generationId);
-                        if (generation != null)
-                        {
-                            generation.PhotoUrl = fallback?.Url;
-                        }
-                    }
                 }
 
                 if (fallback != null)
@@ -186,14 +169,14 @@ namespace CarComparisonApi.Services
                 await _dbContext.SaveChangesAsync();
             }
 
-            _logger.LogInformation("Image deleted. GenerationId: {GenerationId}, VariantId: {VariantId}, ImageId: {ImageId}", generationId, variantId, imageId);
+            _logger.LogInformation("Image deleted. ModelId: {ModelId}, VariantId: {VariantId}, ImageId: {ImageId}", modelId, variantId, imageId);
             return true;
         }
 
-        public async Task<GenerationImageDto?> SetPrimaryAsync(int generationId, int variantId, int imageId)
+        public async Task<GenerationImageDto?> SetPrimaryAsync(int modelId, int variantId, int imageId)
         {
             var variant = await _dbContext.GenerationVariants
-                .FirstOrDefaultAsync(v => v.Id == variantId && v.GenerationId == generationId);
+                .FirstOrDefaultAsync(v => v.Id == variantId && v.ModelId == modelId);
             if (variant == null)
             {
                 return null;
@@ -220,15 +203,6 @@ namespace CarComparisonApi.Services
             }
 
             variant.PhotoUrl = target.Url;
-            if (variant.IsDefault)
-            {
-                var generation = await _dbContext.Generations.FirstOrDefaultAsync(g => g.Id == generationId);
-                if (generation != null)
-                {
-                    generation.PhotoUrl = target.Url;
-                }
-            }
-
             await _dbContext.SaveChangesAsync();
             return ToDto(target);
         }

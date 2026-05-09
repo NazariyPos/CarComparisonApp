@@ -746,11 +746,11 @@ button:disabled {
 }
 
 .catalog-main {
-  max-width: 1200px;
+  width: min(100%, 1320px);
   margin: 0 auto;
   position: relative;
   z-index: 2;
-  padding: 24px 24px 120px;
+  padding: 24px 16px 120px;
 }
 
 .search-panel,
@@ -835,9 +835,10 @@ button:disabled {
 
 .result-card-photo {
   width: 100%;
-  height: 115px;
+  height: 160px;
   border-radius: 8px;
   object-fit: cover;
+  object-position: center 35%;
   border: 1px solid #d6d6d8;
 }
 
@@ -854,7 +855,7 @@ button:disabled {
 }
 
 .placeholder-photo {
-  height: 115px;
+  height: 160px;
   border-radius: 8px;
   border: 1px dashed #b9b9be;
   background: linear-gradient(135deg, #ececee 0%, #dbdbde 100%);
@@ -1109,6 +1110,19 @@ button:disabled {
   background: #f4f4f5;
 }
 
+.model-trims-table tbody tr.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.model-trims-table tbody tr.clickable-row:hover {
+  background-color: #e8e8eb;
+}
+
+.model-trims-table tbody tr:nth-child(2n).clickable-row:hover {
+  background-color: #d4d4d9;
+}
+
 .owner-rating-summary {
   display: flex;
   align-items: center;
@@ -1211,6 +1225,24 @@ button:disabled {
 .site-footer {
   height: 170px;
   background: #d37f4f;
+  margin-top: auto;
+  width: 100%;
+}
+
+/* Make top-level page wrappers use column flex so footer can stick to bottom */
+.catalog-page,
+.home-page,
+.admin-page,
+.brands-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.catalog-main,
+.home-main,
+.admin-main {
+  flex: 1 0 auto;
 }
 
 .admin-page {
@@ -1333,6 +1365,55 @@ button:disabled {
   resize: vertical;
 }
 
+.admin-form-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-expander-toggle {
+  justify-self: start;
+}
+
+.admin-expander-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 220ms ease, opacity 220ms ease;
+}
+
+.admin-expander-panel-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.admin-expander-panel-inner {
+  overflow: hidden;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-form-divider {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #d2d2d5;
+}
+
+.admin-form-divider h3 {
+  font-size: 16px;
+  color: #4a4a4d;
+  margin: 0 0 12px 0;
+}
+
 .admin-check-field {
   display: inline-flex;
   align-items: center;
@@ -1347,6 +1428,51 @@ button:disabled {
   height: 18px;
   margin: 0;
   accent-color: #d2672d;
+}
+
+/* Modal for large admin forms */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 20px;
+}
+
+.modal {
+  background: #fff;
+  width: 100%;
+  max-width: 1100px;
+  max-height: 90vh;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-body {
+  padding: 18px 20px;
+  overflow: auto;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .admin-actions-row {
@@ -1434,6 +1560,203 @@ button:disabled {
 .admin-gallery-actions .admin-secondary-button,
 .admin-gallery-actions .admin-danger-button {
   margin-top: 0;
+}
+
+/* Trim Details Page Styles */
+.trim-details-section {
+  margin-top: 20px;
+  background: #ededee;
+  border: 1px solid rgba(210, 103, 45, 0.45);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.trim-details-section h2 {
+  margin: 0 0 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 28px;
+}
+
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.details-table tbody tr {
+  border-bottom: 1px solid #d4d4d7;
+}
+
+.details-table tbody tr:nth-child(2n) {
+  background: #f4f4f5;
+}
+
+.details-table td {
+  padding: 12px 10px;
+  text-align: left;
+}
+
+.details-table td.label {
+  font-weight: 700;
+  color: #505052;
+  width: 40%;
+}
+
+.details-table td.value {
+  color: #242424;
+}
+
+.reviews-section {
+  margin-top: 20px;
+}
+
+.rating-summary {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+.rating-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f4f4f5;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.score-value {
+  font-size: 48px;
+  font-weight: 700;
+  color: #d2672d;
+  line-height: 1;
+}
+
+.score-label {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #505052;
+}
+
+.rating-distribution {
+  display: grid;
+  gap: 10px;
+}
+
+.rating-bar {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 50px;
+  align-items: center;
+  gap: 10px;
+}
+
+.bar-label {
+  font-weight: 700;
+  text-align: right;
+  font-size: 13px;
+}
+
+.bar-container {
+  height: 20px;
+  background: #d9d9dc;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: #e0a587;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.bar-count {
+  font-weight: 700;
+  text-align: right;
+  font-size: 13px;
+  color: #505052;
+}
+
+.reviews-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.review-card {
+  border: 1px solid #d2d2d4;
+  border-radius: 12px;
+  background: #f4f4f5;
+  padding: 14px;
+}
+
+.review-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.review-rating {
+  display: flex;
+  align-items: center;
+}
+
+.rating-score {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.review-author {
+  display: grid;
+  gap: 4px;
+}
+
+.review-author strong {
+  display: block;
+  font-size: 15px;
+  color: #242424;
+}
+
+.review-date {
+  font-size: 12px;
+  color: #8f4a24;
+  font-weight: 700;
+}
+
+.review-content {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #242424;
+}
+
+.page-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.page-actions button {
+  border-radius: 999px;
+  border: 1px solid #cbcbce;
+  background: #f5f5f6;
+  color: #242424;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  padding: 10px 16px;
+  margin-top: 0;
+}
+
+.page-actions button:hover {
+  border-color: #d2672d;
+  background: #fff0ea;
 }
 
 @media (max-width: 1000px) {

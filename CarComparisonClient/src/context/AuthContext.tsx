@@ -258,7 +258,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => {
       isCancelled = true
     }
-  }, [accessTokenState, clearAuthState])
+  }, [accessTokenState])
 
   const value = useMemo<AuthContextValue>(
     () => ({
