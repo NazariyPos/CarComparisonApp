@@ -34,9 +34,22 @@ namespace CarComparisonApi.Services
                 .AsNoTracking()
                 .ToListAsync();
 
+            var generationVariantIds = favorites
+                .Select(f => f.Trim?.GenerationVariant?.Id)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .Distinct()
+                .ToList();
+
+            var trimCountsByVariantId = await _dbContext.Trims
+                .Where(t => generationVariantIds.Contains(t.GenerationVariantId))
+                .GroupBy(t => t.GenerationVariantId)
+                .Select(g => new { GenerationVariantId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.GenerationVariantId, x => x.Count);
+
             return favorites
                 .Where(f => f.Trim?.GenerationVariant?.Model?.Brand != null)
-                .Select(MapToDto)
+                .Select(f => MapToDto(f, GetTrimCount(f, trimCountsByVariantId)))
                 .ToList();
         }
 
@@ -79,7 +92,7 @@ namespace CarComparisonApi.Services
 
             return favorite?.Trim?.GenerationVariant?.Model?.Brand == null
                 ? null
-                : MapToDto(favorite);
+                : MapToDto(favorite, await GetTrimCountAsync(favorite));
         }
 
         public async Task<bool> RemoveFavoriteAsync(int userId, int trimId)
@@ -104,7 +117,33 @@ namespace CarComparisonApi.Services
             return _dbContext.Favorites.AnyAsync(f => f.UserId == userId && f.TrimId == trimId);
         }
 
-        private static FavoriteDto MapToDto(Favorite favorite)
+        private async Task<int> GetTrimCountAsync(Favorite favorite)
+        {
+            var generationVariantId = favorite.Trim?.GenerationVariant?.Id;
+            if (!generationVariantId.HasValue)
+            {
+                return 0;
+            }
+
+            return await _dbContext.Trims.CountAsync(t => t.GenerationVariantId == generationVariantId.Value);
+        }
+
+        private static int GetTrimCount(
+            Favorite favorite,
+            Dictionary<int, int> trimCountsByVariantId)
+        {
+            var generationVariantId = favorite.Trim?.GenerationVariant?.Id;
+            if (!generationVariantId.HasValue)
+            {
+                return 0;
+            }
+
+            return trimCountsByVariantId.TryGetValue(generationVariantId.Value, out var count)
+                ? count
+                : 0;
+        }
+
+        private static FavoriteDto MapToDto(Favorite favorite, int trimCount)
         {
             var trim = favorite.Trim!;
             var variant = trim.GenerationVariant!;
@@ -112,7 +151,6 @@ namespace CarComparisonApi.Services
             var brand = model.Brand!;
 
             var photoUrl = variant.Images.FirstOrDefault(i => i.IsPrimary)?.Url
-                ?? variant.PhotoUrl
                 ?? variant.PhotoUrl;
 
             return new FavoriteDto
@@ -122,10 +160,14 @@ namespace CarComparisonApi.Services
                 TrimName = trim.Name,
                 GenerationId = variant.Id,
                 GenerationName = variant.Name,
+                DisplayGenerationName = variant.Name,
+                YearFrom = variant.YearFrom,
+                YearTo = variant.YearTo,
                 ModelId = model.Id,
                 ModelName = model.Name,
                 BrandId = brand.Id,
                 BrandName = brand.Name,
+                TrimCount = trimCount,
                 PhotoUrl = photoUrl,
                 AddedAt = favorite.AddedAt
             };

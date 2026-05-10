@@ -15,11 +15,16 @@ namespace CarComparisonApi.Controllers
     {
         private readonly CarComparisonDbContext _dbContext;
         private readonly IJsonUserService _userService;
+        private readonly ISearchCarsProjectionService _searchCarsProjectionService;
 
-        public AdminController(CarComparisonDbContext dbContext, IJsonUserService userService)
+        public AdminController(
+            CarComparisonDbContext dbContext,
+            IJsonUserService userService,
+            ISearchCarsProjectionService searchCarsProjectionService)
         {
             _dbContext = dbContext;
             _userService = userService;
+            _searchCarsProjectionService = searchCarsProjectionService;
         }
 
         private async Task<bool> IsCurrentUserAdminAsync()
@@ -28,6 +33,11 @@ namespace CarComparisonApi.Controllers
             if (!int.TryParse(idClaim, out var userId)) return false;
             var user = await _userService.GetUserByIdAsync(userId);
             return user?.IsAdmin ?? false;
+        }
+
+        private Task RefreshSearchProjectionAsync()
+        {
+            return _searchCarsProjectionService.RebuildAsync();
         }
 
         public record CreateBrandRequest(string Name);
@@ -90,7 +100,7 @@ namespace CarComparisonApi.Controllers
         public async Task<IActionResult> GetBodyStyles()
         {
             if (!await IsCurrentUserAdminAsync()) return Forbid();
-            
+
             var bodyStyles = await _dbContext.BodyStyles
                 .AsNoTracking()
                 .OrderBy(b => b.Name)
@@ -118,6 +128,7 @@ namespace CarComparisonApi.Controllers
             var brand = new CarBrand { Name = normalizedName };
             await _dbContext.CarBrands.AddAsync(brand);
             await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
 
             return Ok(new { id = brand.Id, name = brand.Name });
         }
@@ -149,6 +160,7 @@ namespace CarComparisonApi.Controllers
             var model = new CarModel { Name = normalizedName, BodyType = req.BodyType?.Trim(), BrandId = brandId };
             await _dbContext.CarModels.AddAsync(model);
             await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
 
             return Ok(new { id = model.Id, name = model.Name, brandId = brandId });
         }
@@ -201,6 +213,7 @@ namespace CarComparisonApi.Controllers
 
             await _dbContext.GenerationVariants.AddAsync(variant);
             await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
 
             return Ok(new { id = variant.Id, name = variant.Name, modelId = modelId });
         }
@@ -238,6 +251,7 @@ namespace CarComparisonApi.Controllers
 
             await _dbContext.Trims.AddAsync(trim);
             await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
 
             return Ok(new { id = trim.Id, name = trim.Name, variantId = variantId });
         }
@@ -301,6 +315,7 @@ namespace CarComparisonApi.Controllers
                 existingDetails.RearSuspension = req.RearSuspension?.Trim();
 
                 await _dbContext.SaveChangesAsync();
+                await RefreshSearchProjectionAsync();
                 return Ok(new { id = existingDetails.Id, trimId });
             }
 
@@ -343,8 +358,193 @@ namespace CarComparisonApi.Controllers
 
             await _dbContext.TechnicalDetails.AddAsync(details);
             await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
 
             return Ok(new { id = details.Id, trimId = trimId });
+        }
+
+        [HttpDelete("brands/{brandId}")]
+        public async Task<IActionResult> DeleteBrand(int brandId)
+        {
+            if (!await IsCurrentUserAdminAsync()) return Forbid();
+            if (brandId <= 0) return BadRequest("Invalid brandId");
+
+            var brand = await _dbContext.CarBrands
+                .Include(b => b.Models)
+                .FirstOrDefaultAsync(b => b.Id == brandId);
+
+            if (brand == null) return NotFound("Brand not found");
+
+            // Delete all models and their variants/trims/images cascade
+            var modelIds = brand.Models.ConvertAll(m => m.Id);
+            if (modelIds.Count > 0)
+            {
+                var variants = await _dbContext.GenerationVariants
+                    .Where(v => modelIds.Contains(v.ModelId))
+                    .ToListAsync();
+
+                var variantIds = variants.ConvertAll(v => v.Id);
+                if (variantIds.Count > 0)
+                {
+                    var trims = await _dbContext.Trims
+                        .Where(t => variantIds.Contains(t.GenerationVariantId))
+                        .ToListAsync();
+
+                    // Delete technical details for all trims
+                    var trimIds = trims.ConvertAll(t => t.Id);
+                    var technicalDetails = await _dbContext.TechnicalDetails
+                        .Where(td => trimIds.Contains(td.TrimId))
+                        .ToListAsync();
+                    _dbContext.TechnicalDetails.RemoveRange(technicalDetails);
+
+                    // Delete all trims
+                    _dbContext.Trims.RemoveRange(trims);
+
+                    // Delete all images
+                    var images = await _dbContext.GenerationImages
+                        .Where(gi => variantIds.Contains(gi.GenerationVariantId))
+                        .ToListAsync();
+                    _dbContext.GenerationImages.RemoveRange(images);
+                }
+
+                // Delete all variants
+                _dbContext.GenerationVariants.RemoveRange(variants);
+            }
+
+            // Delete the brand
+            _dbContext.CarBrands.Remove(brand);
+            await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
+
+            return Ok(new { message = "Brand deleted successfully", id = brandId });
+        }
+
+        [HttpDelete("models/{modelId}")]
+        public async Task<IActionResult> DeleteModel(int modelId)
+        {
+            if (!await IsCurrentUserAdminAsync()) return Forbid();
+            if (modelId <= 0) return BadRequest("Invalid modelId");
+
+            var model = await _dbContext.CarModels
+                .Include(m => m.GenerationVariants)
+                .FirstOrDefaultAsync(m => m.Id == modelId);
+
+            if (model == null) return NotFound("Model not found");
+
+            // Delete all variants and their trims/images cascade
+            var variantIds = model.GenerationVariants.ConvertAll(v => v.Id);
+            if (variantIds.Count > 0)
+            {
+                var trims = await _dbContext.Trims
+                    .Where(t => variantIds.Contains(t.GenerationVariantId))
+                    .ToListAsync();
+
+                // Delete technical details for all trims
+                var trimIds = trims.ConvertAll(t => t.Id);
+                var technicalDetails = await _dbContext.TechnicalDetails
+                    .Where(td => trimIds.Contains(td.TrimId))
+                    .ToListAsync();
+                _dbContext.TechnicalDetails.RemoveRange(technicalDetails);
+
+                // Delete all trims
+                _dbContext.Trims.RemoveRange(trims);
+
+                // Delete all images
+                var images = await _dbContext.GenerationImages
+                    .Where(gi => variantIds.Contains(gi.GenerationVariantId))
+                    .ToListAsync();
+                _dbContext.GenerationImages.RemoveRange(images);
+            }
+
+            // Delete all variants
+            _dbContext.GenerationVariants.RemoveRange(model.GenerationVariants);
+
+            // Delete the model
+            _dbContext.CarModels.Remove(model);
+            await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
+
+            return Ok(new { message = "Model deleted successfully", id = modelId });
+        }
+
+        [HttpDelete("variants/{variantId}")]
+        public async Task<IActionResult> DeleteGenerationVariant(int variantId)
+        {
+            if (!await IsCurrentUserAdminAsync()) return Forbid();
+            if (variantId <= 0) return BadRequest("Invalid variantId");
+
+            var variant = await _dbContext.GenerationVariants
+                .Include(v => v.Trims)
+                .FirstOrDefaultAsync(v => v.Id == variantId);
+
+            if (variant == null) return NotFound("Variant not found");
+
+            // Delete all trims and their technical details
+            if (variant.Trims.Count > 0)
+            {
+                var trimIds = variant.Trims.ConvertAll(t => t.Id);
+                var technicalDetails = await _dbContext.TechnicalDetails
+                    .Where(td => trimIds.Contains(td.TrimId))
+                    .ToListAsync();
+                _dbContext.TechnicalDetails.RemoveRange(technicalDetails);
+
+                _dbContext.Trims.RemoveRange(variant.Trims);
+            }
+
+            // Delete all images
+            var images = await _dbContext.GenerationImages
+                .Where(gi => gi.GenerationVariantId == variantId)
+                .ToListAsync();
+            _dbContext.GenerationImages.RemoveRange(images);
+
+            // Delete the variant
+            _dbContext.GenerationVariants.Remove(variant);
+            await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
+
+            return Ok(new { message = "Variant deleted successfully", id = variantId });
+        }
+
+        [HttpDelete("trims/{trimId}")]
+        public async Task<IActionResult> DeleteTrim(int trimId)
+        {
+            if (!await IsCurrentUserAdminAsync()) return Forbid();
+            if (trimId <= 0) return BadRequest("Invalid trimId");
+
+            var trim = await _dbContext.Trims
+                .Include(t => t.TechnicalDetails)
+                .FirstOrDefaultAsync(t => t.Id == trimId);
+
+            if (trim == null) return NotFound("Trim not found");
+
+            // Delete technical details if exists
+            if (trim.TechnicalDetails != null)
+            {
+                _dbContext.TechnicalDetails.Remove(trim.TechnicalDetails);
+            }
+
+            // Delete the trim
+            _dbContext.Trims.Remove(trim);
+            await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
+
+            return Ok(new { message = "Trim deleted successfully", id = trimId });
+        }
+
+        [HttpDelete("technical-details/{technicalDetailsId}")]
+        public async Task<IActionResult> DeleteTechnicalDetails(int technicalDetailsId)
+        {
+            if (!await IsCurrentUserAdminAsync()) return Forbid();
+            if (technicalDetailsId <= 0) return BadRequest("Invalid technicalDetailsId");
+
+            var details = await _dbContext.TechnicalDetails.FindAsync(technicalDetailsId);
+            if (details == null) return NotFound("Technical details not found");
+
+            _dbContext.TechnicalDetails.Remove(details);
+            await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
+
+            return Ok(new { message = "Technical details deleted successfully", id = technicalDetailsId });
         }
     }
 }

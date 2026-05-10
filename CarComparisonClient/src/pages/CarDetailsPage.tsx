@@ -257,6 +257,44 @@ export function CarDetailsPage() {
     }
   }, [generationId, generationVariantId])
 
+  // Збережение переглядиvenil покоління у localStorage
+  useEffect(() => {
+    if (!pageData) return
+
+    const generation = pageData.generation
+    const viewItem = {
+      generationId: generation.id,
+      generationVariantId: generation.generationVariantId || generation.id,
+      generationName: generation.name,
+      brandName: generation.brand.name,
+      modelName: generation.model.name,
+      bodyType: generation.model.bodyType || '',
+      brandId: generation.brand.id,
+      modelId: generation.model.id,
+      photoUrl: generation.photoUrl || '',
+      timestamp: Date.now(),
+    }
+
+    try {
+      const stored = localStorage.getItem('recentViews')
+      const recentViews = stored ? JSON.parse(stored) : []
+
+      // Видалити дубліkat, якщо вже переглянуте
+      const filtered = recentViews.filter(
+        (item: typeof viewItem) => !(
+          item.generationId === viewItem.generationId &&
+          item.generationVariantId === viewItem.generationVariantId
+        )
+      )
+
+      // Додати нове в початок, зберегти останні 20
+      const updated = [viewItem, ...filtered].slice(0, 20)
+      localStorage.setItem('recentViews', JSON.stringify(updated))
+    } catch (e) {
+      console.error('Failed to save recent view:', e)
+    }
+  }, [pageData])
+
   const galleryPhotos = useMemo(() => {
     if (!pageData) {
       return []

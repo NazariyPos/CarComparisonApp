@@ -551,15 +551,10 @@ namespace CarComparisonApi.Services
             return new SearchFacetsDto
             {
                 BodyStyles = bodyStyles
-                    .Select(x => new BodyStyleOptionDto
-                    {
-                        Id = x.BodyStyleId!.Value,
-                        Name = x.BodyStyleName!
-                    })
-                    .ToList(),
-                VariantTypes = variantTypes.Where(x => !string.IsNullOrEmpty(x)).ToList(),
-                TransmissionTypes = transmissionTypes.Where(x => !string.IsNullOrEmpty(x)).ToList(),
-                FuelTypes = fuelTypes.Where(x => !string.IsNullOrEmpty(x)).ToList()
+                    .ConvertAll(x => new BodyStyleOptionDto { Id = x.BodyStyleId!.Value, Name = x.BodyStyleName! }),
+                VariantTypes = variantTypes.Where(x => !string.IsNullOrEmpty(x)).Cast<string>().ToList(),
+                TransmissionTypes = transmissionTypes.Where(x => !string.IsNullOrEmpty(x)).Cast<string>().ToList(),
+                FuelTypes = fuelTypes.Where(x => !string.IsNullOrEmpty(x)).Cast<string>().ToList()
             };
         }
 
@@ -593,7 +588,7 @@ namespace CarComparisonApi.Services
                 .AsNoTracking()
                 .ToListAsync();
 
-            return variants.Select(variant => new Generation
+            return variants.ConvertAll(variant => new Generation
             {
                 Id = variant.Id,
                 Name = variant.Name,

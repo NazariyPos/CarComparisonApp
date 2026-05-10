@@ -9,6 +9,9 @@ import {
   getModelsByBrand,
   searchGenerations,
   getCarImagesFromExternal,
+  getTrimsByGeneration,
+  getTrimsByGenerationVariant,
+  addFavorite,
   type BodyStyleOptionDto,
   type BrandBasicDto,
   type GenerationVariantDto,
@@ -153,6 +156,15 @@ export function BrandsPage() {
     }
   }, [bodyStyleId, transmission, fuelType, bodyStyleOptions, transmissionOptions, fuelTypeOptions])
 
+  const recentViews = useMemo(() => {
+    try {
+      const stored = localStorage.getItem('recentViews')
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  }, [])
+
   const popularCards = useMemo(() => {
     if (results.length > 0) {
       return results.slice(0, 4)
@@ -209,6 +221,37 @@ export function BrandsPage() {
       },
     ]
   }, [results])
+
+  const [addingKeys, setAddingKeys] = useState<string[]>([])
+
+  const handleAddToFavorites = async (item: GenerationCardDto) => {
+    const key = String(item.generationVariantId ?? item.generationId)
+    if (addingKeys.includes(key)) return
+
+    setAddingKeys((s) => [...s, key])
+    try {
+      let trims = []
+
+      if (item.generationVariantId) {
+        trims = await getTrimsByGenerationVariant(item.generationId, item.generationVariantId)
+      } else {
+        trims = await getTrimsByGeneration(item.generationId)
+      }
+
+      if (!trims || trims.length === 0) {
+        alert('Не знайдено комплектацій для додавання в обране')
+        return
+      }
+
+      const trimId = trims[0].id
+      const ok = await addFavorite(trimId)
+      if (!ok) {
+        alert('Не вдалося додати в обране. Можливо потрібно увійти.')
+      }
+    } finally {
+      setAddingKeys((s) => s.filter((k) => k !== key))
+    }
+  }
 
   useEffect(() => {
     if (results.length === 0) {
@@ -444,6 +487,15 @@ export function BrandsPage() {
                     >
                       Переглянути сторінку авто
                     </Link>
+                    <button
+                      type="button"
+                      className="primary-cta"
+                      onClick={() => void handleAddToFavorites(item)}
+                      disabled={addingKeys.includes(String(item.generationVariantId ?? item.generationId))}
+                      style={{ marginLeft: 8 }}
+                    >
+                      {addingKeys.includes(String(item.generationVariantId ?? item.generationId)) ? 'Додаємо...' : 'Додати в обране'}
+                    </button>
                   </li>
                   )
                 })}
@@ -451,6 +503,64 @@ export function BrandsPage() {
             )}
           </section>
         )}
+
+        <section className="results-panel">
+          <h3>Останні запити</h3>
+          {recentViews.length === 0 && (
+            <p className="muted-note">
+              На даний момент немає переглянутих авто. Після перегляду автомобіля вони з'являться тут.
+            </p>
+          )}
+
+          {recentViews.length > 0 && (
+            <ul className="result-grid">
+              {recentViews.slice(0, 4).map((item: any) => {
+                const photoUrl = item.photoUrl
+
+                return (
+                  <li
+                    key={`${item.brandId}-${item.modelId}-${item.generationId}-${item.timestamp}`}
+                    className="result-card"
+                  >
+                    {photoUrl ? (
+                      <img
+                        src={photoUrl}
+                        alt={`${item.brandName} ${item.modelName}`}
+                        className="result-card-photo"
+                      />
+                    ) : (
+                      <div className="placeholder-photo">Без фото</div>
+                    )}
+                    <strong>
+                      {item.brandName} {item.modelName}
+                    </strong>
+                    <span>{item.generationName}</span>
+                    <small>{item.bodyType}</small>
+                    <Link
+                      to={
+                        item.generationVariantId
+                          ? `/cars/variants/${item.generationVariantId}`
+                          : `/cars/${item.generationId}`
+                      }
+                      className="result-card-link"
+                    >
+                      Переглянути сторінку авто
+                    </Link>
+                    <button
+                      type="button"
+                      className="primary-cta"
+                      onClick={() => void handleAddToFavorites(item)}
+                      disabled={addingKeys.includes(String(item.generationVariantId ?? item.generationId))}
+                      style={{ marginLeft: 8 }}
+                    >
+                      {addingKeys.includes(String(item.generationVariantId ?? item.generationId)) ? 'Додаємо...' : 'Додати в обране'}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
 
         <section className="results-panel">
           <h3>Найпопулярніші запити</h3>
@@ -467,6 +577,16 @@ export function BrandsPage() {
                 </strong>
                 <span>{item.generationName}</span>
                 <small>{item.bodyType}</small>
+                <div style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className="primary-cta"
+                    onClick={() => void handleAddToFavorites(item)}
+                    disabled={addingKeys.includes(String(item.generationVariantId ?? item.generationId))}
+                  >
+                    {addingKeys.includes(String(item.generationVariantId ?? item.generationId)) ? 'Додаємо...' : 'Додати в обране'}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -477,3 +597,5 @@ export function BrandsPage() {
     </div>
   )
 }
+
+export default BrandsPage

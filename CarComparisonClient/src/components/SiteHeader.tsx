@@ -30,6 +30,11 @@ export function SiteHeader() {
           <NavLink to="/comparison" className={navClassName}>
             Порівняння
           </NavLink>
+          {isAuthenticated && (
+            <NavLink to="/favorites" className={navClassName}>
+              Обране
+            </NavLink>
+          )}
           {canAccessAdminPhotos ? (
             <NavLink to="/admin/photos" className={navClassName}>
               Адмін фото

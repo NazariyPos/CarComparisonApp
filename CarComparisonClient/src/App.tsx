@@ -3,6 +3,7 @@ import { AppLayout } from './components/AppLayout'
 import { AdminPhotoUploadPage } from './pages/AdminPhotoUploadPage'
 import { AdminCatalogPage } from './pages/AdminCatalogPage'
 import { BrandsPage } from './pages/BrandsPage'
+import { FavoritesPage } from './pages/FavoritesPage'
 import { CarDetailsPage } from './pages/CarDetailsPage'
 import { ComparisonPage } from './pages/ComparisonPage'
 import { HomePage } from './pages/HomePage'
@@ -18,6 +19,7 @@ function App() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/brands" element={<BrandsPage />} />
+        <Route path="/favorites" element={<FavoritesPage />} />
         <Route path="/cars/:generationId" element={<CarDetailsPage />} />
         <Route path="/cars/variants/:generationVariantId" element={<CarDetailsPage />} />
         <Route path="/cars/variants/:generationVariantId/trims/:trimId" element={<TrimDetailsPage />} />

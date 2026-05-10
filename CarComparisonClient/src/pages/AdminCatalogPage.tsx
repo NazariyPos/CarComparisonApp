@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import {
   type BodyStyleOptionDto,
   type BrandBasicDto,
+  type TrimBasicDto,
   type GenerationWithTrimsDto,
   type GenerationVariantDto,
   type ModelDto,
@@ -14,6 +15,10 @@ import {
   createModel,
   createTechnicalDetails,
   createTrim,
+  deleteBrand,
+  deleteGenerationVariant,
+  deleteModel,
+  deleteTrim,
   getBrands,
   getGenerationVariantWithTrims,
   getGenerationVariantsByModel,
@@ -102,6 +107,15 @@ export function AdminCatalogPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoadingLookups, setIsLoadingLookups] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'brand' | 'model' | 'variant' | 'trim'; id: number; name: string } | null>(null)
+  const [deleteBrandId, setDeleteBrandId] = useState('')
+  const [deleteModelId, setDeleteModelId] = useState('')
+  const [deleteVariantId, setDeleteVariantId] = useState('')
+  const [deleteTrimId, setDeleteTrimId] = useState('')
+  const [deleteModels, setDeleteModels] = useState<ModelDto[]>([])
+  const [deleteVariants, setDeleteVariants] = useState<GenerationVariantDto[]>([])
+  const [deleteTrims, setDeleteTrims] = useState<TrimBasicDto[]>([])
 
   useEffect(() => {
     if (!isAuthReady) return
@@ -185,6 +199,66 @@ export function AdminCatalogPage() {
 
     void loadGenerationScope()
   }, [variantId])
+
+  useEffect(() => {
+    async function loadDeleteModels() {
+      if (!deleteBrandId) {
+        setDeleteModels([])
+        setDeleteModelId('')
+        setDeleteVariants([])
+        setDeleteVariantId('')
+        setDeleteTrims([])
+        setDeleteTrimId('')
+        return
+      }
+
+      const data = await getModelsByBrand(Number.parseInt(deleteBrandId, 10))
+      setDeleteModels(data)
+      setDeleteModelId('')
+      setDeleteVariants([])
+      setDeleteVariantId('')
+      setDeleteTrims([])
+      setDeleteTrimId('')
+    }
+
+    void loadDeleteModels()
+  }, [deleteBrandId])
+
+  useEffect(() => {
+    async function loadDeleteVariants() {
+      if (!deleteModelId) {
+        setDeleteVariants([])
+        setDeleteVariantId('')
+        setDeleteTrims([])
+        setDeleteTrimId('')
+        return
+      }
+
+      const data = await getGenerationVariantsByModel(Number.parseInt(deleteModelId, 10))
+      setDeleteVariants(data)
+      setDeleteVariantId('')
+      setDeleteTrims([])
+      setDeleteTrimId('')
+    }
+
+    void loadDeleteVariants()
+  }, [deleteModelId])
+
+  useEffect(() => {
+    async function loadDeleteTrims() {
+      if (!deleteVariantId) {
+        setDeleteTrims([])
+        setDeleteTrimId('')
+        return
+      }
+
+      const details = await getGenerationVariantWithTrims(Number.parseInt(deleteVariantId, 10))
+      setDeleteTrims(details?.trims ?? [])
+      setDeleteTrimId('')
+    }
+
+    void loadDeleteTrims()
+  }, [deleteVariantId])
 
   const selectedBrand = useMemo(() => brands.find((item) => String(item.id) === brandId), [brandId, brands])
   const selectedModel = useMemo(() => models.find((item) => String(item.id) === modelId), [modelId, models])
@@ -445,6 +519,143 @@ export function AdminCatalogPage() {
 
     const details = await getGenerationVariantWithTrims(Number.parseInt(variantId, 10))
     setGenerationDetails(details)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) {
+      return
+    }
+
+    setIsDeleting(true)
+    setError(null)
+    setMessage(null)
+
+    try {
+      let success = false
+
+      switch (deleteConfirm.type) {
+        case 'brand':
+          success = await deleteBrand(deleteConfirm.id)
+          break
+        case 'model':
+          success = await deleteModel(deleteConfirm.id)
+          break
+        case 'variant':
+          success = await deleteGenerationVariant(deleteConfirm.id)
+          break
+        case 'trim':
+          success = await deleteTrim(deleteConfirm.id)
+          break
+      }
+
+      if (!success) {
+        setError(`Не вдалося видалити ${getDeleteTypeLabel(deleteConfirm.type)}.`)
+        return
+      }
+
+      setMessage(`${getDeleteTypeLabel(deleteConfirm.type)} видалено.`)
+      setDeleteConfirm(null)
+      setDeleteBrandId('')
+      setDeleteModelId('')
+      setDeleteVariantId('')
+      setDeleteTrimId('')
+      setDeleteModels([])
+      setDeleteVariants([])
+      setDeleteTrims([])
+
+      const newBrands = await getBrands()
+      setBrands(newBrands)
+
+      if (deleteConfirm.type === 'brand' && String(deleteConfirm.id) === brandId) {
+        setBrandId('')
+        setModelId('')
+        setVariantId('')
+        setTrimId('')
+        setModels([])
+        setGenerationVariants([])
+        setGenerationDetails(null)
+      } else if (deleteConfirm.type === 'model' && String(deleteConfirm.id) === modelId) {
+        setModelId('')
+        setVariantId('')
+        setTrimId('')
+        setGenerationVariants([])
+        setGenerationDetails(null)
+      } else if (deleteConfirm.type === 'variant' && String(deleteConfirm.id) === variantId) {
+        setVariantId('')
+        setTrimId('')
+        setGenerationDetails(null)
+
+        if (modelId) {
+          const variantData = await getGenerationVariantsByModel(Number.parseInt(modelId, 10))
+          setGenerationVariants(variantData)
+        }
+      } else if (deleteConfirm.type === 'trim' && String(deleteConfirm.id) === trimId) {
+        setTrimId('')
+
+        if (variantId) {
+          const details = await getGenerationVariantWithTrims(Number.parseInt(variantId, 10))
+          setGenerationDetails(details)
+        }
+      }
+    } catch {
+      setError(`Помилка при видаленні ${getDeleteTypeLabel(deleteConfirm.type)}.`)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const getDeleteTypeLabel = (type: 'brand' | 'model' | 'variant' | 'trim'): string => {
+    switch (type) {
+      case 'brand':
+        return 'Марка'
+      case 'model':
+        return 'Модель'
+      case 'variant':
+        return 'Покоління'
+      case 'trim':
+        return 'Комплектація'
+    }
+  }
+
+  const updateDeleteConfirmFromSelection = (
+    nextBrandId: string,
+    nextModelId: string,
+    nextVariantId: string,
+    nextTrimId: string,
+  ) => {
+    if (nextTrimId) {
+      const trim = deleteTrims.find((item) => String(item.id) === nextTrimId)
+      if (trim) {
+        setDeleteConfirm({ type: 'trim', id: trim.id, name: trim.name })
+        return
+      }
+    }
+
+    if (nextVariantId) {
+      const variant = deleteVariants.find((item) => String(item.id) === nextVariantId)
+      if (variant) {
+        setDeleteConfirm({ type: 'variant', id: variant.id, name: variant.name })
+        return
+      }
+    }
+
+    if (nextModelId) {
+      const model = deleteModels.find((item) => String(item.id) === nextModelId)
+      if (model) {
+        setDeleteConfirm({ type: 'model', id: model.id, name: model.name })
+        return
+      }
+    }
+
+    if (nextBrandId) {
+      const brand = brands.find((item) => String(item.id) === nextBrandId)
+      if (brand) {
+        setDeleteConfirm({ type: 'brand', id: brand.id, name: brand.name })
+        return
+      }
+    }
+
+    setDeleteConfirm(null)
   }
 
   return (
@@ -766,8 +977,142 @@ export function AdminCatalogPage() {
           ) : null}
         </section>
 
-        {message && <p className="status-pill admin-status-pill">{message}</p>}
-        {error && <p className="error-text">{error}</p>}
+        <section className="admin-panel">
+          <h2>Видалення елементів каталогу</h2>
+          <p className="muted-note">Оберіть елемент для видалення. Видалення марки/моделі/покоління видалить також усі дочірні елементи.</p>
+
+          <div className="admin-grid">
+            <div className="admin-field">
+              <label>
+                <span>Видалити марку</span>
+                <select
+                  value={deleteBrandId}
+                  onChange={(event) => {
+                    const value = event.target.value
+                    setDeleteBrandId(value)
+                    setDeleteModelId('')
+                    setDeleteVariantId('')
+                    setDeleteTrimId('')
+                    updateDeleteConfirmFromSelection(value, '', '', '')
+                  }}
+                >
+                  <option value="">Оберіть марку для видалення</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="admin-field">
+              <label>
+                <span>Видалити модель</span>
+                <select
+                  value={deleteModelId}
+                  onChange={(event) => {
+                    const value = event.target.value
+                    setDeleteModelId(value)
+                    setDeleteVariantId('')
+                    setDeleteTrimId('')
+                    updateDeleteConfirmFromSelection(deleteBrandId, value, '', '')
+                  }}
+                  disabled={!deleteBrandId || deleteModels.length === 0}
+                >
+                  <option value="">Оберіть модель для видалення</option>
+                  {deleteModels.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="admin-field">
+              <label>
+                <span>Видалити покоління</span>
+                <select
+                  value={deleteVariantId}
+                  onChange={(event) => {
+                    const value = event.target.value
+                    setDeleteVariantId(value)
+                    setDeleteTrimId('')
+                    updateDeleteConfirmFromSelection(deleteBrandId, deleteModelId, value, '')
+                  }}
+                  disabled={!deleteModelId || deleteVariants.length === 0}
+                >
+                  <option value="">Оберіть покоління для видалення</option>
+                  {deleteVariants.map((variant) => (
+                    <option key={variant.id} value={variant.id}>
+                      {variant.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="admin-field">
+              <label>
+                <span>Видалити комплектацію</span>
+                <select
+                  value={deleteTrimId}
+                  onChange={(event) => {
+                    const value = event.target.value
+                    setDeleteTrimId(value)
+                    updateDeleteConfirmFromSelection(deleteBrandId, deleteModelId, deleteVariantId, value)
+                  }}
+                  disabled={!deleteVariantId || deleteTrims.length === 0}
+                >
+                  <option value="">Оберіть комплектацію для видалення</option>
+                  {deleteTrims.map((trimItem) => (
+                    <option key={trimItem.id} value={trimItem.id}>
+                      {trimItem.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
+          {deleteConfirm && (
+            <div className="admin-confirmation">
+              <p>
+                <strong>Ви впевнені, що хочете видалити?</strong>
+              </p>
+              <p className="confirmation-text">
+                {getDeleteTypeLabel(deleteConfirm.type)}: <strong>{deleteConfirm.name}</strong>
+              </p>
+              {deleteConfirm.type !== 'trim' && (
+                <p className="confirmation-warning">
+                  Видалення також видалить усі дочірні елементи.
+                </p>
+              )}
+              <div className="admin-action-buttons">
+                <button
+                  type="button"
+                  className="admin-danger-button"
+                  onClick={() => void handleDeleteConfirm()}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Видалення...' : 'Видалити'}
+                </button>
+                <button
+                  type="button"
+                  className="admin-secondary-button"
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={isDeleting}
+                >
+                  Скасувати
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {message && !deleteConfirm && <p className="status-pill admin-status-pill">{message}</p>}
+        {error && !deleteConfirm && <p className="error-text">{error}</p>}
       </main>
 
       <SiteFooter />

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -7,6 +7,9 @@ namespace CarComparisonApi.Migrations
     /// <inheritdoc />
     public partial class RemoveGenerationTable : Migration
     {
+        private static readonly string[] ModelIdIndexColumns = new[] { "ModelId", "VariantType", "BodyStyleId", "DoorsCount" };
+        private static readonly string[] GenerationIdIndexColumns = new[] { "GenerationId", "VariantType", "BodyStyleId", "DoorsCount" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -63,7 +66,7 @@ END
             migrationBuilder.CreateIndex(
                 name: "IX_GenerationVariants_ModelId_VariantType_BodyStyleId_DoorsCount",
                 table: "GenerationVariants",
-                columns: new[] { "ModelId", "VariantType", "BodyStyleId", "DoorsCount" });
+                columns: ModelIdIndexColumns);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_GenerationVariants_CarModels_ModelId",
@@ -165,7 +168,7 @@ FROM dbo.GenerationVariants gv;
             migrationBuilder.CreateIndex(
                 name: "IX_GenerationVariants_GenerationId_VariantType_BodyStyleId_DoorsCount",
                 table: "GenerationVariants",
-                columns: new[] { "GenerationId", "VariantType", "BodyStyleId", "DoorsCount" });
+                columns: GenerationIdIndexColumns);
 
             migrationBuilder.DropColumn(
                 name: "ModelId",

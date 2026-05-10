@@ -10,10 +10,14 @@ namespace CarComparisonApi.Models.DTOs
         public string TrimName { get; set; } = string.Empty;
         public int GenerationId { get; set; }
         public string GenerationName { get; set; } = string.Empty;
+        public string DisplayGenerationName { get; set; } = string.Empty;
+        public int YearFrom { get; set; }
+        public int YearTo { get; set; }
         public int ModelId { get; set; }
         public string ModelName { get; set; } = string.Empty;
         public int BrandId { get; set; }
         public string BrandName { get; set; } = string.Empty;
+        public int TrimCount { get; set; }
         public string? PhotoUrl { get; set; }
         public DateTime AddedAt { get; set; }
     }

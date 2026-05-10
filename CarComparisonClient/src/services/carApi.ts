@@ -44,6 +44,7 @@ export interface TrimDto {
 export interface GenerationCardDto {
   generationId: number
   generationName: string
+  trimId?: number
   generationVariantId?: number
   generationVariantName?: string
   displayGenerationName: string
@@ -370,6 +371,7 @@ function mapGenerationCardDto(raw: RawDto): GenerationCardDto {
   const generationVariantName = readOptionalString(raw, 'generationVariantName', 'GenerationVariantName')
 
   return {
+    trimId: readOptionalNumber(raw, 'trimId', 'TrimId'),
     generationId: readNumber(raw, 'generationId', 'GenerationId'),
     generationName,
     generationVariantId: readOptionalNumber(raw, 'generationVariantId', 'GenerationVariantId'),
@@ -1009,5 +1011,69 @@ export async function createTechnicalDetails(trimId: number, payload: {
     return data as { id: number; trimId: number }
   } catch {
     return null
+  }
+}
+
+export async function deleteBrand(id: number): Promise<boolean> {
+  try {
+    await apiClient.delete(`/admin/brands/${id}`)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function deleteModel(id: number): Promise<boolean> {
+  try {
+    await apiClient.delete(`/admin/models/${id}`)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function deleteGenerationVariant(id: number): Promise<boolean> {
+  try {
+    await apiClient.delete(`/admin/variants/${id}`)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function deleteTrim(id: number): Promise<boolean> {
+  try {
+    await apiClient.delete(`/admin/trims/${id}`)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function getFavorites(): Promise<GenerationCardDto[]> {
+  try {
+    const { data } = await apiClient.get<unknown>('/Favorites/me')
+    return asRawDtoArray(data).map(mapGenerationCardDto)
+  } catch {
+    return []
+  }
+}
+
+export async function removeFavorite(id: number): Promise<boolean> {
+  try {
+    await apiClient.delete(`/Favorites/trim/${id}`)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function addFavorite(trimId: number): Promise<boolean> {
+  try {
+    const payload = { trimId }
+    await apiClient.post('/Favorites', payload)
+    return true
+  } catch {
+    return false
   }
 }
