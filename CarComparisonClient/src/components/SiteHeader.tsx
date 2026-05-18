@@ -1,5 +1,6 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useEffect, useRef, useState } from 'react'
 
 const navClassName = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'site-nav-link site-nav-link-active' : 'site-nav-link'
@@ -8,6 +9,8 @@ export function SiteHeader() {
   const { currentUser, isAuthenticated, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const accountRef = useRef<HTMLDivElement | null>(null)
   const returnPath = `${location.pathname}${location.search}${location.hash}`
   const canAccessAdminPhotos = isAuthenticated && currentUser?.isAdmin
 
@@ -15,6 +18,28 @@ export function SiteHeader() {
     logout()
     navigate('/', { replace: true })
   }
+
+  const toggleMenu = () => setIsMenuOpen((s) => !s)
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!accountRef.current) return
+      if (!accountRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setIsMenuOpen(false)
+    }
+
+    document.addEventListener('click', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('click', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [])
 
   return (
     <header className="site-header">
@@ -48,10 +73,38 @@ export function SiteHeader() {
         </div>
 
         {isAuthenticated && currentUser ? (
-          <div className="site-account" aria-label="Поточний користувач">
-            <span className="site-account-trigger">{currentUser.login}</span>
+          <div
+            ref={accountRef}
+            className={`site-account${isMenuOpen ? ' open' : ''}`}
+            aria-label="Поточний користувач"
+          >
+            <button
+              type="button"
+              className="site-account-trigger"
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen}
+              onClick={toggleMenu}
+            >
+              {currentUser.login}
+            </button>
             <div className="site-account-menu" role="menu" aria-label="Меню акаунту">
-              <button type="button" className="site-account-logout" onClick={handleLogout} role="menuitem">
+              <Link
+                to="/profile"
+                className="site-account-menu-item"
+                role="menuitem"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Профіль користувача
+              </Link>
+              <button
+                type="button"
+                className="site-account-logout"
+                onClick={() => {
+                  setIsMenuOpen(false)
+                  handleLogout()
+                }}
+                role="menuitem"
+              >
                 Вийти
               </button>
             </div>

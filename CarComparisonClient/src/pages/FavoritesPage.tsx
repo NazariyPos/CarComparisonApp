@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { SiteFooter } from '../components/SiteFooter'
 import { SiteHeader } from '../components/SiteHeader'
 import { getFavorites, removeFavorite, type GenerationCardDto } from '../services/carApi'
 
 export function FavoritesPage() {
+  const navigate = useNavigate()
   const [favorites, setFavorites] = useState<GenerationCardDto[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -33,7 +34,7 @@ export function FavoritesPage() {
 
     const ok = await removeFavorite(id)
     if (ok) {
-      setFavorites((s) => s.filter((f) => (f.generationVariantId ?? f.generationId) !== id))
+      setFavorites((s) => s.filter((f) => (f.trimId ?? f.generationVariantId ?? f.generationId) !== id))
     }
   }
 
@@ -65,7 +66,23 @@ export function FavoritesPage() {
                 return (
                   <li
                     key={`${id}-${item.modelId}`}
-                    className="result-card"
+                    className="result-card result-card-clickable"
+                    onClick={() => {
+                      const path = item.generationVariantId
+                        ? `/cars/variants/${item.generationVariantId}`
+                        : `/cars/${item.generationId}`
+                      navigate(path)
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        const path = item.generationVariantId
+                          ? `/cars/variants/${item.generationVariantId}`
+                          : `/cars/${item.generationId}`
+                        navigate(path)
+                      }
+                    }}
                   >
                     {photoUrl ? (
                       <img
@@ -81,32 +98,24 @@ export function FavoritesPage() {
                       {item.brandName} {item.modelName}
                     </strong>
                     <span>
-                      {item.displayGenerationName} ({item.yearFrom}-{item.yearTo})
+                      {item.generationVariantName} ({item.yearFrom}-{item.yearTo})
                     </span>
                     <small>
                       {item.bodyType} • {item.trimCount} комплектацій
                     </small>
 
-                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                      <Link
-                        to={
-                          item.generationVariantId
-                            ? `/cars/variants/${item.generationVariantId}`
-                            : `/cars/${item.generationId}`
-                        }
-                        className="result-card-link"
-                      >
-                        Переглянути
-                      </Link>
-
-                      <button
-                        type="button"
-                        className="primary-cta"
-                        onClick={() => void handleRemove(id)}
-                      >
-                        Прибрати з обраного
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="remove-favorite-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void handleRemove(id)
+                      }}
+                      title="Прибрати з обраного"
+                      aria-label="Прибрати з обраного"
+                    >
+                      <i className="fa-solid fa-heart"></i>
+                    </button>
                   </li>
                 )
               })}

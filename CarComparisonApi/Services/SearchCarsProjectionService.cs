@@ -84,14 +84,12 @@ public class SearchCarsProjectionService : ISearchCarsProjectionService
                     ModelId = model.Id,
                     ModelName = model.Name,
                     GenerationId = variant.Id,
-                    GenerationName = variant.Name,
                     TrimName = t.Name,
                     GenerationVariantId = variant.Id,
                     GenerationVariantName = variant.Name,
                     VariantType = variant.VariantType,
                     BodyStyleId = variant.BodyStyleId,
                     BodyStyleName = variant.BodyStyle?.Name,
-                    DoorsCount = variant.DoorsCount,
                     FuelType = t.TechnicalDetails?.FuelType,
                     TransmissionType = t.TransmissionType,
                     YearFrom = variant.YearFrom,
@@ -129,14 +127,12 @@ BEGIN
         ModelId INT NOT NULL,
         ModelName NVARCHAR(120) NOT NULL,
         GenerationId INT NOT NULL,
-        GenerationName NVARCHAR(120) NOT NULL,
         TrimName NVARCHAR(150) NOT NULL,
         GenerationVariantId INT NULL,
         GenerationVariantName NVARCHAR(120) NULL,
         VariantType INT NULL,
         BodyStyleId INT NULL,
         BodyStyleName NVARCHAR(60) NULL,
-        DoorsCount INT NULL,
         FuelType NVARCHAR(60) NULL,
         TransmissionType NVARCHAR(60) NULL,
         YearFrom INT NOT NULL,
@@ -160,8 +156,6 @@ IF COL_LENGTH('dbo.SearchCars', 'BodyStyleId') IS NULL
     ALTER TABLE dbo.SearchCars ADD BodyStyleId INT NULL;
 IF COL_LENGTH('dbo.SearchCars', 'BodyStyleName') IS NULL
     ALTER TABLE dbo.SearchCars ADD BodyStyleName NVARCHAR(60) NULL;
-IF COL_LENGTH('dbo.SearchCars', 'DoorsCount') IS NULL
-    ALTER TABLE dbo.SearchCars ADD DoorsCount INT NULL;
 
 IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SearchCars_FilterCore' AND object_id = OBJECT_ID(N'dbo.SearchCars'))
     DROP INDEX IX_SearchCars_FilterCore ON dbo.SearchCars;
@@ -177,7 +171,7 @@ IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SearchCars_YearRange' AND
 
 CREATE NONCLUSTERED INDEX IX_SearchCars_FilterCore
 ON dbo.SearchCars (BrandId, ModelId, GenerationId, YearFrom, YearTo, SearchCarId)
-INCLUDE (BodyStyleId, VariantType, FuelType, TransmissionType, BrandName, ModelName, GenerationName, TrimName, PhotoUrl, PopularityScore)
+INCLUDE (BodyStyleId, VariantType, FuelType, TransmissionType, BrandName, ModelName, GenerationVariantName, TrimName, PhotoUrl, PopularityScore)
 WHERE IsActive = 1;
 
 CREATE NONCLUSTERED INDEX IX_SearchCars_Facets
@@ -186,7 +180,7 @@ WHERE IsActive = 1;
 
 CREATE NONCLUSTERED INDEX IX_SearchCars_Popularity
 ON dbo.SearchCars (BrandId, ModelId, PopularityScore DESC, SearchCarId)
-INCLUDE (GenerationId, TrimId, BrandName, ModelName, GenerationName, TrimName, PhotoUrl, YearFrom, YearTo)
+INCLUDE (GenerationId, TrimId, BrandName, ModelName, GenerationVariantName, TrimName, PhotoUrl, YearFrom, YearTo)
 WHERE IsActive = 1;
 
 CREATE NONCLUSTERED INDEX IX_SearchCars_YearRange

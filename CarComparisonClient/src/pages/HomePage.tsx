@@ -1,17 +1,7 @@
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { NavLink } from 'react-router-dom'
+import { SiteHeader } from '../components/SiteHeader'
 
 export function HomePage() {
-  const { currentUser, isAuthenticated, logout } = useAuth()
-  const location = useLocation()
-  const navigate = useNavigate()
-  const returnPath = `${location.pathname}${location.search}${location.hash}`
-  const canAccessAdminPhotos = isAuthenticated && currentUser?.isAdmin
-
-  const handleLogout = () => {
-    logout()
-    navigate('/', { replace: true })
-  }
 
   return (
     <div className="home-page">
@@ -26,49 +16,7 @@ export function HomePage() {
         </svg>
       </div>
 
-      <header className="home-header">
-        <nav className="home-nav" aria-label="Main navigation">
-          <div className="home-logo">CarDD</div>
-
-          <div className="home-nav-links">
-            <NavLink to="/brands" className="home-nav-link">
-              Каталог авто
-            </NavLink>
-            <NavLink to="/comparison" className="home-nav-link">
-              Порівняння
-            </NavLink>
-            {canAccessAdminPhotos ? (
-              <NavLink to="/admin/photos" className="home-nav-link">
-                Адмін фото
-              </NavLink>
-            ) : null}
-
-            {isAuthenticated && currentUser ? (
-              <div className="home-account" aria-label="Поточний користувач">
-                <span className="home-account-trigger">{currentUser.login}</span>
-                <div className="home-account-menu" role="menu" aria-label="Меню акаунту">
-                  <button
-                    type="button"
-                    className="home-account-logout"
-                    onClick={handleLogout}
-                    role="menuitem"
-                  >
-                    Вийти
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                state={{ from: returnPath }}
-                className="home-login-button"
-              >
-                Увійти
-              </Link>
-            )}
-          </div>
-        </nav>
-      </header>
+      <SiteHeader />
 
       <section className="home-hero">
         <div className="home-hero-text">

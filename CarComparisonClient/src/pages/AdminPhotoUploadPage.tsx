@@ -13,6 +13,7 @@ import {
   getModelsByBrand,
   setGenerationVariantImagePrimary,
   uploadGenerationVariantImage,
+  uploadGenerationImageByGeneration,
   type BrandBasicDto,
   type GenerationImageDto,
   type GenerationDto,
@@ -99,18 +100,18 @@ export function AdminPhotoUploadPage() {
     () => generations.find((item) => String(item.id) === generationId),
     [generations, generationId],
   )
-  const selectedVariant = useMemo(
-    () => variants.find((item) => String(item.id) === variantId),
-    [variants, variantId],
-  )
 
-  const visibleVariants = useMemo(() => {
-    if (!generationId) {
-      return variants
+  const selectedVariant = useMemo(() => {
+    if (variantId) {
+      return variants.find((item) => String(item.id) === variantId) ?? null
     }
 
-    return variants.filter((item) => String(item.generationId) === generationId)
-  }, [generationId, variants])
+    if (selectedGeneration) {
+      return variants.find((item) => item.generationId === selectedGeneration.id) ?? null
+    }
+
+    return null
+  }, [selectedGeneration, variantId, variants])
 
   useEffect(() => {
     async function loadBrands() {
@@ -222,8 +223,13 @@ export function AdminPhotoUploadPage() {
   }, [generationId, variantId, variants])
 
   const handleUpload = async () => {
-    if (!selectedFile || !selectedVariant) {
-      setError('Вибери варіант і файл зображення.')
+    if (!selectedFile) {
+      setError('Вибери файл зображення.')
+      return
+    }
+
+    if (!selectedVariant && !selectedGeneration) {
+      setError('Оберіть покоління або модифікацію.')
       return
     }
 
@@ -234,22 +240,42 @@ export function AdminPhotoUploadPage() {
     setMessage(null)
 
     try {
-      const created = await uploadGenerationVariantImage(
-        selectedVariant.generationId,
-        selectedVariant.id,
-        selectedFile,
-        isPrimary,
-        parsedSortOrder,
-      )
+      const created = selectedVariant
+        ? await uploadGenerationVariantImage(
+          selectedVariant.generationId,
+          selectedVariant.id,
+          selectedFile,
+          isPrimary,
+          parsedSortOrder,
+        )
+        : await uploadGenerationImageByGeneration(
+          selectedGeneration!.id,
+          selectedFile,
+          isPrimary,
+          parsedSortOrder,
+        )
 
       if (!created) {
         setError('Не вдалося завантажити фото.')
         return
       }
 
+      const activeVariant =
+        selectedVariant ?? variants.find((item) => item.id === created.generationVariantId) ?? null
+
+      if (!activeVariant) {
+        setError('Фото завантажено, але не вдалося визначити модифікацію для оновлення списку.')
+        setMessage('Фото завантажено.')
+        setSelectedFile(null)
+        setSortOrder('')
+        return
+      }
+
+      setVariantId(String(activeVariant.id))
+
       const refreshedImages = await getGenerationVariantImages(
-        selectedVariant.generationId,
-        selectedVariant.id,
+        activeVariant.generationId,
+        activeVariant.id,
       )
 
       setImages(refreshedImages)
@@ -341,7 +367,7 @@ export function AdminPhotoUploadPage() {
         </section>
 
         <section className="admin-panel">
-          <h2>Обери цільову модифікацію</h2>
+          <h2>Оберіть цільове покоління</h2>
 
           <div className="admin-grid">
             <label className="admin-field">
@@ -392,7 +418,6 @@ export function AdminPhotoUploadPage() {
                 value={generationId}
                 onChange={(event) => {
                   setGenerationId(event.target.value)
-                  setVariantId('')
                   setImages([])
                 }}
                 disabled={!modelId}
@@ -401,22 +426,6 @@ export function AdminPhotoUploadPage() {
                 {generations.map((generation) => (
                   <option key={generation.id} value={generation.id}>
                     {generation.name} ({generation.yearFrom}-{generation.yearTo})
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="admin-field">
-              <span>Модифікація</span>
-              <select
-                value={variantId}
-                onChange={(event) => setVariantId(event.target.value)}
-                disabled={!modelId || visibleVariants.length === 0}
-              >
-                <option value="">Оберіть модифікацію</option>
-                {visibleVariants.map((variant) => (
-                  <option key={variant.id} value={variant.id}>
-                    {variant.name} • {variant.bodyStyleName} • {variant.yearFrom}-{variant.yearTo}
                   </option>
                 ))}
               </select>
@@ -470,7 +479,7 @@ export function AdminPhotoUploadPage() {
             type="button"
             className="primary-cta"
             onClick={handleUpload}
-            disabled={!selectedVariant || !selectedFile || isUploading}
+                disabled={!selectedGeneration || !selectedFile || isUploading}
           >
             {isUploading ? 'Завантаження...' : 'Завантажити фото'}
           </button>
@@ -520,7 +529,7 @@ export function AdminPhotoUploadPage() {
               <p className="muted-note">Для цієї модифікації ще немає фото.</p>
             )
           ) : (
-            <p className="muted-note">Спершу обери модифікацію.</p>
+            <p className="muted-note">Спершу оберіть покоління.</p>
           )}
         </section>
 

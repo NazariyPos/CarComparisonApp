@@ -43,11 +43,9 @@ export interface TrimDto {
 
 export interface GenerationCardDto {
   generationId: number
-  generationName: string
   trimId?: number
   generationVariantId?: number
   generationVariantName?: string
-  displayGenerationName: string
   yearFrom: number
   yearTo: number
   photoUrl?: string
@@ -191,6 +189,14 @@ export interface ReviewDto {
   rating: number
   createdAt: string
   updatedAt?: string
+}
+
+export interface ReviewMutationDto {
+  id?: number
+  userId: number
+  trimId: number
+  content: string
+  rating: number
 }
 
 export interface ReviewWithDetailsDto {
@@ -367,19 +373,13 @@ function mapTrimDto(raw: RawDto): TrimDto {
 }
 
 function mapGenerationCardDto(raw: RawDto): GenerationCardDto {
-  const generationName = readString(raw, 'generationName', 'GenerationName')
   const generationVariantName = readOptionalString(raw, 'generationVariantName', 'GenerationVariantName')
 
   return {
     trimId: readOptionalNumber(raw, 'trimId', 'TrimId'),
     generationId: readNumber(raw, 'generationId', 'GenerationId'),
-    generationName,
     generationVariantId: readOptionalNumber(raw, 'generationVariantId', 'GenerationVariantId'),
     generationVariantName,
-    displayGenerationName:
-      readString(raw, 'displayGenerationName', 'DisplayGenerationName')
-      || generationVariantName
-      || generationName,
     yearFrom: readNumber(raw, 'yearFrom', 'YearFrom'),
     yearTo: readNumber(raw, 'yearTo', 'YearTo'),
     photoUrl: readOptionalString(raw, 'photoUrl', 'PhotoUrl'),
@@ -790,6 +790,54 @@ export async function getReviewsByTrim(
   }
 }
 
+export async function getReviewsByUser(
+  userId: number,
+): Promise<ReviewWithDetailsDto[]> {
+  try {
+    const { data } = await apiClient.get<unknown>(`/Reviews/user/${userId}`)
+    return asRawDtoArray(data).map(mapReviewWithDetailsDto)
+  } catch {
+    return []
+  }
+}
+
+export async function createReview(payload: { trimId: number; rating: number; content: string }): Promise<ReviewDto> {
+  try {
+    const { data } = await apiClient.post<unknown>('/Reviews', payload)
+
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response')
+    }
+
+    return mapReviewDto(data as RawDto)
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function updateReview(reviewId: number, payload: ReviewMutationDto): Promise<ReviewDto> {
+  try {
+    const { data } = await apiClient.put<unknown>(`/Reviews/${reviewId}`, payload)
+
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response')
+    }
+
+    return mapReviewDto(data as RawDto)
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function deleteReview(reviewId: number): Promise<boolean> {
+  try {
+    await apiClient.delete(`/Reviews/${reviewId}`)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function getCarImagesFromExternal(
   brand: string,
   model: string,
@@ -852,6 +900,41 @@ export async function uploadGenerationVariantImage(
   try {
     const { data } = await apiClient.post<unknown>(
       `/generations/${generationId}/variants/${variantId}/images`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    )
+
+    if (!data || typeof data !== 'object') {
+      return null
+    }
+
+    return mapGenerationImageDto(data as RawDto)
+  } catch {
+    return null
+  }
+}
+
+export async function uploadGenerationImageByGeneration(
+  generationId: number,
+  file: File,
+  isPrimary: boolean,
+  sortOrder?: number,
+): Promise<GenerationImageDto | null> {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('isPrimary', String(isPrimary))
+
+  if (typeof sortOrder === 'number' && Number.isFinite(sortOrder)) {
+    formData.append('sortOrder', String(sortOrder))
+  }
+
+  try {
+    const { data } = await apiClient.post<unknown>(
+      `/generations/${generationId}/images`,
       formData,
       {
         headers: {

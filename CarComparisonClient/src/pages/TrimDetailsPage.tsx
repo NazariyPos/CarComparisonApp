@@ -1,15 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { SiteFooter } from '../components/SiteFooter'
 import { SiteHeader } from '../components/SiteHeader'
+import { useAuth } from '../context/AuthContext'
 import {
   getTrimFullDetails,
   getReviewsByTrim,
+  deleteReview,
   type TrimFullDetailsDto,
 } from '../services/carApi.ts'
+import { ReviewModal } from '../components/ReviewModal'
+import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
 
 interface OwnerReviewView {
   key: string
+  id: number
+  userId: number
+  trimId: number
   rating: number
   content: string
   username: string
@@ -98,13 +105,68 @@ const formatDate = (value: string): string => {
   return new Date(timestamp).toLocaleDateString('uk-UA')
 }
 
+const calculateRatingData = (reviews: OwnerReviewView[]) => {
+  const total = reviews.length
+  const sum = reviews.reduce((acc, review) => acc + review.rating, 0)
+  const average = total > 0 ? sum / total : 0
+
+  const distribution = Array.from({ length: 10 }, (_, index) => {
+    const score = 10 - index
+    const count = reviews.filter((review) => review.rating === score).length
+    const percent = total > 0 ? (count / total) * 100 : 0
+
+    return {
+      score,
+      count,
+      percent,
+    }
+  })
+
+  return {
+    total,
+    average,
+    distribution,
+  }
+}
+
 export function TrimDetailsPage() {
   const { trimId } = useParams<{ trimId: string }>()
   const navigate = useNavigate()
+  const { currentUser } = useAuth()
   const [trim, setTrim] = useState<TrimFullDetailsDto | null>(null)
   const [reviews, setReviews] = useState<OwnerReviewView[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [reviewModalReview, setReviewModalReview] = useState<
+    | { id: number; userId: number; trimId: number; rating: number; content: string }
+    | null
+  >(null)
+  const [deleteReviewId, setDeleteReviewId] = useState<number | null>(null)
+  const [isDeletingReview, setIsDeletingReview] = useState(false)
+
+  const ratingData = useMemo(() => calculateRatingData(reviews), [reviews])
+  const activeStars = Math.round(ratingData.average)
+
+  const refreshReviews = async () => {
+    if (validTrimId === null) {
+      return
+    }
+
+    const reviewsData = await getReviewsByTrim(validTrimId)
+
+    const normalizedReviews: OwnerReviewView[] = (reviewsData || []).map((item) => ({
+      key: `review-${item.review.id}`,
+      id: item.review.id,
+      userId: item.review.userId,
+      trimId: item.review.trimId,
+      rating: item.review.rating,
+      content: item.review.content,
+      username: item.username || 'Невідомий',
+      createdAt: item.review.createdAt,
+    }))
+
+    setReviews(normalizedReviews)
+  }
 
   const parsedTrimId = Number.parseInt(trimId ?? '', 10)
   const validTrimId = Number.isFinite(parsedTrimId) && parsedTrimId > 0 ? parsedTrimId : null
@@ -139,6 +201,9 @@ export function TrimDetailsPage() {
 
         const normalizedReviews: OwnerReviewView[] = (reviewsData || []).map((item) => ({
           key: `review-${item.review.id}`,
+          id: item.review.id,
+          userId: item.review.userId,
+          trimId: item.review.trimId,
           rating: item.review.rating,
           content: item.review.content,
           username: item.username || 'Невідомий',
@@ -210,30 +275,6 @@ export function TrimDetailsPage() {
     generation.yearFrom > 0 && generation.yearTo > 0
       ? `${generation.yearFrom}-${generation.yearTo}`
       : 'Роки випуску невідомі'
-
-  const ratingData = (() => {
-    const total = reviews.length
-    const sum = reviews.reduce((acc, review) => acc + review.rating, 0)
-    const average = total > 0 ? sum / total : 0
-
-    const distribution = Array.from({ length: 10 }, (_, index) => {
-      const score = 10 - index
-      const count = reviews.filter((review) => review.rating === score).length
-      const percent = total > 0 ? (count / total) * 100 : 0
-
-      return {
-        score,
-        count,
-        percent,
-      }
-    })
-
-    return {
-      total,
-      average,
-      distribution,
-    }
-  })()
 
   return (
     <div className="catalog-page">
@@ -320,61 +361,153 @@ export function TrimDetailsPage() {
           </table>
         </section>
 
-        {reviews.length > 0 && (
-          <section className="trim-details-section reviews-section">
-            <h2>Відгуки власників</h2>
+        <section className="trim-details-section reviews-section model-block model-rating-block">
+          <h3>Середня оцінка від власників</h3>
 
-            <div className="rating-summary">
-              <div className="rating-score">
-                <div className="score-value">{ratingData.average.toFixed(1)}</div>
-                <div className="score-label">
-                  з 10 ({ratingData.total} {ratingData.total === 1 ? 'відгук' : 'відгуків'})
-                </div>
-              </div>
-
-              <div className="rating-distribution">
-                {ratingData.distribution.map((item) => (
-                  <div key={item.score} className="rating-bar">
-                    <div className="bar-label">{item.score}</div>
-                    <div className="bar-container">
-                      <div
-                        className="bar-fill"
-                        style={{ width: `${item.percent}%` }}
-                        title={`${item.count} голосів`}
-                      />
-                    </div>
-                    <div className="bar-count">{item.count}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="reviews-list">
-              {reviews.map((review) => (
-                <article key={review.key} className="review-card">
-                  <div className="review-header">
-                    <div className="review-rating">
-                      <span className="rating-score">
-                        {Array(review.rating)
-                          .fill('⭐')
-                          .join('')}
-                      </span>
-                    </div>
-                    <div className="review-author">
-                      <strong>{review.username}</strong>
-                      <span className="review-date">{formatDate(review.createdAt)}</span>
-                    </div>
-                  </div>
-                  <p className="review-content">{review.content}</p>
-                </article>
+          <div className="owner-rating-summary">
+            <div className="owner-rating-stars" aria-hidden="true">
+              {Array.from({ length: 10 }, (_, index) => (
+                <span
+                  key={`star-${index}`}
+                  className={
+                    index < activeStars
+                      ? 'owner-rating-star owner-rating-star-active'
+                      : 'owner-rating-star'
+                  }
+                >
+                  ★
+                </span>
               ))}
             </div>
-          </section>
-        )}
+            <strong className="owner-rating-value">
+              {ratingData.total > 0
+                ? `${decimalFormatter.format(ratingData.average)}/10`
+                : 'Немає оцінок'}
+            </strong>
+          </div>
 
-        <div className="page-actions">
-          <button onClick={() => navigate(-1)}>Повернутися назад</button>
-        </div>
+          <h4>Рейтинг відгуків</h4>
+          <ul className="owner-rating-list">
+            {ratingData.distribution.map((item) => (
+              <li key={`rating-${item.score}`} className="owner-rating-row">
+                <span className="owner-rating-score">{item.score}</span>
+                <div className="owner-rating-track" aria-hidden="true">
+                  <div
+                    className="owner-rating-fill"
+                    style={{ width: `${item.percent}%` }}
+                  />
+                </div>
+                <span className="owner-rating-percent">
+                  {decimalFormatter.format(item.percent)}%
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="trim-details-section model-block">
+          <h3>Відгуки власників</h3>
+
+          {reviews.length === 0 && (
+            <p className="muted-note">Поки немає відгуків для цієї моделі.</p>
+          )}
+
+          {reviews.length > 0 && (
+            <ul className="owner-reviews-list">
+              {reviews.map((review) => (
+                <li key={review.key} className="owner-review-card">
+                  <div className="owner-review-head">
+                    <strong>{review.username}</strong>
+                    <span>{trim.name}</span>
+                    <span>{review.rating}/10</span>
+                  </div>
+                  <p>{review.content || 'Без тексту відгуку'}</p>
+                  {currentUser?.id === review.userId && (
+                    <div className="owner-review-actions">
+                      <button
+                        type="button"
+                        className="owner-review-edit-btn"
+                        aria-label="Редагувати відгук"
+                        title="Редагувати відгук"
+                        onClick={() => {
+                          setReviewModalReview({
+                            id: review.id,
+                            userId: review.userId,
+                            trimId: review.trimId,
+                            rating: review.rating,
+                            content: review.content,
+                          })
+                        }}
+                      >
+                        <i className="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        className="owner-review-delete-btn"
+                        aria-label="Видалити відгук"
+                        title="Видалити відгук"
+                        onClick={() => setDeleteReviewId(review.id)}
+                      >
+                        <i className="fa-solid fa-trash" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  )}
+                  {review.createdAt && (
+                    <small>{formatDate(review.createdAt)}</small>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <ReviewModal
+          isOpen={reviewModalReview !== null}
+          onClose={() => setReviewModalReview(null)}
+          trims={trim ? [{ id: trim.id, name: trim.name }] : []}
+          initialReview={reviewModalReview}
+          title="Редагувати відгук"
+          submitLabel="Зберегти зміни"
+          onSubmitted={async () => {
+            await refreshReviews()
+          }}
+          onRequireLogin={() => {
+            navigate('/login', {
+              state: { from: `/cars/variants/${trim?.generationVariant.id}/trims/${trim?.id}` },
+            })
+          }}
+        />
+
+        <ConfirmDeleteModal
+          isOpen={deleteReviewId !== null}
+          message="Видалити ваш відгук?"
+          isSubmitting={isDeletingReview}
+          onClose={() => {
+            if (!isDeletingReview) {
+              setDeleteReviewId(null)
+            }
+          }}
+          onConfirm={async () => {
+            if (!deleteReviewId) {
+              return
+            }
+
+            setIsDeletingReview(true)
+
+            try {
+              const ok = await deleteReview(deleteReviewId)
+
+              if (ok) {
+                setDeleteReviewId(null)
+                await refreshReviews()
+              } else {
+                alert('Не вдалося видалити відгук.')
+              }
+            } finally {
+              setIsDeletingReview(false)
+            }
+          }}
+        />
       </main>
 
       <SiteFooter />

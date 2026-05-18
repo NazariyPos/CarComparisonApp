@@ -6,10 +6,9 @@ namespace CarComparisonApi.Models.DTOs
     public class GenerationCardDto
     {
         public int GenerationId { get; set; }
-        public string GenerationName { get; set; } = string.Empty;
+        public string? GenerationName { get; set; }
         public int? GenerationVariantId { get; set; }
         public string? GenerationVariantName { get; set; }
-        public string DisplayGenerationName { get; set; } = string.Empty;
         public int YearFrom { get; set; }
         public int YearTo { get; set; }
         public string? PhotoUrl { get; set; }

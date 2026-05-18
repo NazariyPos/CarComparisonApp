@@ -369,7 +369,7 @@ namespace CarComparisonApi.Services
                 }
                 else if (!string.IsNullOrWhiteSpace(generation))
                 {
-                    query = query.Where(x => x.GenerationName.Contains(generation));
+                    query = query.Where(x => x.GenerationVariantName != null && x.GenerationVariantName.Contains(generation));
                 }
 
                 if (variantType.HasValue)
@@ -411,7 +411,6 @@ namespace CarComparisonApi.Services
                     x.ModelId,
                     x.ModelName,
                     x.GenerationId,
-                    x.GenerationName,
                     x.GenerationVariantId,
                     x.GenerationVariantName,
                     x.YearFrom,
@@ -429,7 +428,6 @@ namespace CarComparisonApi.Services
                     x.ModelId,
                     x.ModelName,
                     x.GenerationId,
-                    x.GenerationName,
                     x.GenerationVariantId,
                     x.GenerationVariantName,
                     x.YearFrom,
@@ -443,12 +441,8 @@ namespace CarComparisonApi.Services
                     ModelId = group.Key.ModelId,
                     ModelName = group.Key.ModelName,
                     GenerationId = group.Key.GenerationId,
-                    GenerationName = group.Key.GenerationName,
                     GenerationVariantId = group.Key.GenerationVariantId,
-                    GenerationVariantName = group.Key.GenerationVariantName,
-                    DisplayGenerationName = !string.IsNullOrWhiteSpace(group.Key.GenerationVariantName)
-                        ? group.Key.GenerationVariantName!
-                        : group.Key.GenerationName,
+                    GenerationVariantName = group.Key.GenerationVariantName ?? "",
                     BodyType = string.Join(
                         " / ",
                         group.Select(x => x.BodyStyleName)
@@ -507,7 +501,7 @@ namespace CarComparisonApi.Services
             }
             else if (!string.IsNullOrWhiteSpace(generation))
             {
-                query = query.Where(x => x.GenerationName.Contains(generation));
+                query = query.Where(x => x.GenerationVariantName != null && x.GenerationVariantName.Contains(generation));
             }
 
             if (minYear.HasValue)
@@ -524,7 +518,7 @@ namespace CarComparisonApi.Services
                 .Where(x => x.BodyStyleId != null && x.BodyStyleName != null)
                 .Select(x => new { x.BodyStyleId, x.BodyStyleName })
                 .Distinct()
-                .OrderBy(x => x)
+                .OrderBy(x => x.BodyStyleName)
                 .ToListAsync();
 
             var variantTypes = await query
@@ -552,9 +546,9 @@ namespace CarComparisonApi.Services
             {
                 BodyStyles = bodyStyles
                     .ConvertAll(x => new BodyStyleOptionDto { Id = x.BodyStyleId!.Value, Name = x.BodyStyleName! }),
-                VariantTypes = variantTypes.Where(x => !string.IsNullOrEmpty(x)).Cast<string>().ToList(),
-                TransmissionTypes = transmissionTypes.Where(x => !string.IsNullOrEmpty(x)).Cast<string>().ToList(),
-                FuelTypes = fuelTypes.Where(x => !string.IsNullOrEmpty(x)).Cast<string>().ToList()
+                VariantTypes = variantTypes.Where(x => !string.IsNullOrEmpty(x)).Select(x => x!).ToList(),
+                TransmissionTypes = transmissionTypes.Where(x => !string.IsNullOrEmpty(x)).Select(x => x!).ToList(),
+                FuelTypes = fuelTypes.Where(x => !string.IsNullOrEmpty(x)).Select(x => x!).ToList()
             };
         }
 
@@ -614,7 +608,7 @@ namespace CarComparisonApi.Services
                 return variants.ConvertAll(variant => new GenerationVariantDto
                 {
                     Id = variant.Id,
-                    GenerationId = variant.ModelId,
+                    GenerationId = variant.GenerationId,
                     Name = variant.Name,
                     VariantType = variant.VariantType.ToString(),
                     BodyStyleId = variant.BodyStyleId,

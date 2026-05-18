@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { SiteFooter } from '../components/SiteFooter'
 import { SiteHeader } from '../components/SiteHeader'
 import {
@@ -12,6 +13,7 @@ import {
   getTrimsByGeneration,
   getTrimsByGenerationVariant,
   addFavorite,
+  getFavorites,
   type BodyStyleOptionDto,
   type BrandBasicDto,
   type GenerationVariantDto,
@@ -20,6 +22,9 @@ import {
 } from '../services/carApi.ts'
 
 export function BrandsPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { isAuthenticated } = useAuth()
   const [brandId, setBrandId] = useState('')
   const [modelId, setModelId] = useState('')
   const [generationVariantId, setGenerationVariantId] = useState('')
@@ -42,6 +47,26 @@ export function BrandsPage() {
   const [hasSearch, setHasSearch] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    async function loadFavorites() {
+      try {
+        const favorites = await getFavorites()
+          const ids = new Set<number>()
+          favorites.forEach((f) => {
+            if (f.trimId) ids.add(f.trimId)
+            if (f.generationVariantId) ids.add(f.generationVariantId)
+            ids.add(f.generationId)
+          })
+        setFavoriteIds(ids)
+      } catch {
+        setFavoriteIds(new Set())
+      }
+    }
+
+    void loadFavorites()
+  }, [])
 
   useEffect(() => {
     async function loadBrands() {
@@ -173,7 +198,7 @@ export function BrandsPage() {
     return [
       {
         generationId: 0,
-        generationName: 'Дані скоро',
+        generationVariantName: 'Дані скоро',
         yearFrom: 0,
         yearTo: 0,
         modelId: 0,
@@ -185,7 +210,7 @@ export function BrandsPage() {
       },
       {
         generationId: 1,
-        generationName: 'Дані скоро',
+        generationVariantName: 'Дані скоро',
         yearFrom: 0,
         yearTo: 0,
         modelId: 1,
@@ -197,7 +222,7 @@ export function BrandsPage() {
       },
       {
         generationId: 2,
-        generationName: 'Дані скоро',
+        generationVariantName: 'Дані скоро',
         yearFrom: 0,
         yearTo: 0,
         modelId: 2,
@@ -209,7 +234,7 @@ export function BrandsPage() {
       },
       {
         generationId: 3,
-        generationName: 'Дані скоро',
+        generationVariantName: 'Дані скоро',
         yearFrom: 0,
         yearTo: 0,
         modelId: 3,
@@ -225,6 +250,11 @@ export function BrandsPage() {
   const [addingKeys, setAddingKeys] = useState<string[]>([])
 
   const handleAddToFavorites = async (item: GenerationCardDto) => {
+    if (!isAuthenticated) {
+      const returnPath = `${location.pathname}${location.search}${location.hash}`
+      navigate('/login', { state: { from: returnPath } })
+      return
+    }
     const key = String(item.generationVariantId ?? item.generationId)
     if (addingKeys.includes(key)) return
 
@@ -233,7 +263,7 @@ export function BrandsPage() {
       let trims = []
 
       if (item.generationVariantId) {
-        trims = await getTrimsByGenerationVariant(item.generationId, item.generationVariantId)
+        trims = await getTrimsByGenerationVariant(item.generationVariantId)
       } else {
         trims = await getTrimsByGeneration(item.generationId)
       }
@@ -245,7 +275,15 @@ export function BrandsPage() {
 
       const trimId = trims[0].id
       const ok = await addFavorite(trimId)
-      if (!ok) {
+      if (ok) {
+        const newFavorites = new Set(favoriteIds)
+        newFavorites.add(trimId)
+        if (item.generationVariantId) {
+          newFavorites.add(item.generationVariantId)
+        }
+        newFavorites.add(item.generationId)
+        setFavoriteIds(newFavorites)
+      } else {
         alert('Не вдалося додати в обране. Можливо потрібно увійти.')
       }
     } finally {
@@ -376,7 +414,7 @@ export function BrandsPage() {
             <select
               value={transmission}
               onChange={(event) => setTransmission(event.target.value)}
-              disabled={isFiltersLoading || transmissionOptions.length === 0}
+              disabled={isFiltersLoading}
             >
               <option value="">Коробка передач</option>
               {transmissionOptions.map((value) => (
@@ -395,9 +433,9 @@ export function BrandsPage() {
             <select
               value={bodyStyleId}
               onChange={(event) => setBodyStyleId(event.target.value)}
-              disabled={isFiltersLoading || bodyStyleOptions.length === 0}
+              disabled={isFiltersLoading}
             >
-              <option value="">Тип кузова (доп.фільтр)</option>
+              <option value="">Тип кузова</option>
               {bodyStyleOptions.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.name}
@@ -408,7 +446,7 @@ export function BrandsPage() {
             <select
               value={fuelType}
               onChange={(event) => setFuelType(event.target.value)}
-              disabled={isFiltersLoading || fuelTypeOptions.length === 0}
+              disabled={isFiltersLoading}
             >
               <option value="">Пальне</option>
               {fuelTypeOptions.map((value) => (
@@ -455,7 +493,23 @@ export function BrandsPage() {
                   return (
                     <li
                       key={`${item.generationVariantId ?? item.generationId}-${item.modelId}`}
-                      className="result-card"
+                      className="result-card result-card-clickable"
+                      onClick={() => {
+                        const path = item.generationVariantId
+                          ? `/cars/variants/${item.generationVariantId}`
+                          : `/cars/${item.generationId}`
+                        navigate(path)
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          const path = item.generationVariantId
+                            ? `/cars/variants/${item.generationVariantId}`
+                            : `/cars/${item.generationId}`
+                          navigate(path)
+                        }
+                      }}
                     >
                       {photoUrl ? (
                         <img
@@ -470,31 +524,29 @@ export function BrandsPage() {
                       {item.brandName} {item.modelName}
                     </strong>
                     <span>
-                      {item.displayGenerationName}
+                      {item.generationVariantName}
                       {' '}
                       ({item.yearFrom}-{item.yearTo})
                     </span>
                     <small>
                       {item.bodyType} • {item.trimCount} комплектацій
                     </small>
-                    <Link
-                      to={
-                        item.generationVariantId
-                          ? `/cars/variants/${item.generationVariantId}`
-                          : `/cars/${item.generationId}`
-                      }
-                      className="result-card-link"
-                    >
-                      Переглянути сторінку авто
-                    </Link>
                     <button
                       type="button"
-                      className="primary-cta"
-                      onClick={() => void handleAddToFavorites(item)}
+                      className="heart-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void handleAddToFavorites(item)
+                      }}
                       disabled={addingKeys.includes(String(item.generationVariantId ?? item.generationId))}
-                      style={{ marginLeft: 8 }}
+                      title="Додати в обране"
+                      aria-label="Додати в обране"
                     >
-                      {addingKeys.includes(String(item.generationVariantId ?? item.generationId)) ? 'Додаємо...' : 'Додати в обране'}
+                      {favoriteIds.has(item.generationVariantId ?? item.generationId) ? (
+                        <i className="fa-solid fa-heart"></i>
+                      ) : (
+                        <i className="fa-regular fa-heart"></i>
+                      )}
                     </button>
                   </li>
                   )
@@ -520,7 +572,23 @@ export function BrandsPage() {
                 return (
                   <li
                     key={`${item.brandId}-${item.modelId}-${item.generationId}-${item.timestamp}`}
-                    className="result-card"
+                    className="result-card result-card-clickable"
+                    onClick={() => {
+                      const path = item.generationVariantId
+                        ? `/cars/variants/${item.generationVariantId}`
+                        : `/cars/${item.generationId}`
+                      navigate(path)
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        const path = item.generationVariantId
+                          ? `/cars/variants/${item.generationVariantId}`
+                          : `/cars/${item.generationId}`
+                        navigate(path)
+                      }
+                    }}
                   >
                     {photoUrl ? (
                       <img
@@ -536,24 +604,22 @@ export function BrandsPage() {
                     </strong>
                     <span>{item.generationName}</span>
                     <small>{item.bodyType}</small>
-                    <Link
-                      to={
-                        item.generationVariantId
-                          ? `/cars/variants/${item.generationVariantId}`
-                          : `/cars/${item.generationId}`
-                      }
-                      className="result-card-link"
-                    >
-                      Переглянути сторінку авто
-                    </Link>
                     <button
                       type="button"
-                      className="primary-cta"
-                      onClick={() => void handleAddToFavorites(item)}
+                      className="heart-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void handleAddToFavorites(item)
+                      }}
                       disabled={addingKeys.includes(String(item.generationVariantId ?? item.generationId))}
-                      style={{ marginLeft: 8 }}
+                      title="Додати в обране"
+                      aria-label="Додати в обране"
                     >
-                      {addingKeys.includes(String(item.generationVariantId ?? item.generationId)) ? 'Додаємо...' : 'Додати в обране'}
+                      {favoriteIds.has(item.generationVariantId ?? item.generationId) ? (
+                        <i className="fa-solid fa-heart"></i>
+                      ) : (
+                        <i className="fa-regular fa-heart"></i>
+                      )}
                     </button>
                   </li>
                 )
@@ -562,35 +628,7 @@ export function BrandsPage() {
           )}
         </section>
 
-        <section className="results-panel">
-          <h3>Найпопулярніші запити</h3>
-          <p className="muted-note">
-            Тимчасово відображаються демо-картки або перші результати пошуку.
-          </p>
-
-          <ul className="result-grid">
-            {popularCards.map((item) => (
-              <li key={`${item.brandId}-${item.modelId}-${item.generationId}`} className="result-card">
-                <div className="placeholder-photo">Без фото</div>
-                <strong>
-                  {item.brandName} {item.modelName}
-                </strong>
-                <span>{item.generationName}</span>
-                <small>{item.bodyType}</small>
-                <div style={{ marginTop: 8 }}>
-                  <button
-                    type="button"
-                    className="primary-cta"
-                    onClick={() => void handleAddToFavorites(item)}
-                    disabled={addingKeys.includes(String(item.generationVariantId ?? item.generationId))}
-                  >
-                    {addingKeys.includes(String(item.generationVariantId ?? item.generationId)) ? 'Додаємо...' : 'Додати в обране'}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
+        {/* Removed "Найпопулярніші запити" section per request */}
       </main>
 
       <SiteFooter />

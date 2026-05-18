@@ -10,6 +10,7 @@ namespace CarComparisonApi.Services
     {
         Task<IEnumerable<GenerationImageDto>> GetByVariantIdAsync(int generationId, int variantId);
         Task<GenerationImageDto?> UploadAsync(int generationId, int variantId, IFormFile file, bool isPrimary, int? sortOrder);
+        Task<GenerationImageDto?> UploadByGenerationAsync(int generationId, IFormFile file, bool isPrimary, int? sortOrder);
         Task<bool> DeleteAsync(int generationId, int variantId, int imageId);
         Task<GenerationImageDto?> SetPrimaryAsync(int generationId, int variantId, int imageId);
     }

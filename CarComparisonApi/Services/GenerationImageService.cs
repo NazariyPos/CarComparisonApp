@@ -123,6 +123,18 @@ namespace CarComparisonApi.Services
             return ToDto(entity);
         }
 
+        public async Task<GenerationImageDto?> UploadByGenerationAsync(int generationId, IFormFile file, bool isPrimary, int? sortOrder)
+        {
+            var variant = await ResolveVariantForGenerationAsync(generationId);
+
+            if (variant == null)
+            {
+                return null;
+            }
+
+            return await UploadAsync(variant.ModelId, variant.Id, file, isPrimary, sortOrder);
+        }
+
         public async Task<bool> DeleteAsync(int modelId, int variantId, int imageId)
         {
             var image = await _dbContext.GenerationImages
@@ -215,6 +227,17 @@ namespace CarComparisonApi.Services
                 .MaxAsync();
 
             return (maxSortOrder ?? 0) + 1;
+        }
+
+        private async Task<GenerationVariant?> ResolveVariantForGenerationAsync(int generationId)
+        {
+            return await _dbContext.GenerationVariants
+                .Where(variant => variant.Id == generationId || variant.ModelId == generationId)
+                .OrderByDescending(variant => variant.Id == generationId)
+                .ThenByDescending(variant => variant.IsDefault)
+                .ThenBy(variant => variant.YearFrom)
+                .ThenBy(variant => variant.Id)
+                .FirstOrDefaultAsync();
         }
 
         private static GenerationImageDto ToDto(GenerationImage image)

@@ -7,6 +7,7 @@ import {
   getGenerationVariantsByModel,
   getModelsByBrand,
   getTrimsByGenerationVariant,
+  getTrimFullDetails,
   type BrandBasicDto,
   type GenerationVariantOptionDto,
   type ModelDto,
@@ -658,6 +659,7 @@ export function ComparisonPage() {
 
   const [comparisonResult, setComparisonResult] =
     useState<ComparisonResultView | null>(null)
+  const [comparisonPhotos, setComparisonPhotos] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -767,6 +769,23 @@ export function ComparisonPage() {
         ...parsedResult,
         trims: sortTrimsByUserOrder(parsedResult.trims, selectedTrimIds),
       })
+      // load photos for each selected trim
+      try {
+        const photoPromises = selectedTrimIds.map(async (trimId) => {
+          try {
+            const details = await getTrimFullDetails(trimId)
+            // prefer generation photo if available
+            return (details?.generation?.photoUrl as string) || ''
+          } catch {
+            return ''
+          }
+        })
+
+        const photos = await Promise.all(photoPromises)
+        setComparisonPhotos(photos)
+      } catch {
+        setComparisonPhotos([])
+      }
     } catch {
       setError('Порівняння не виконано. Перевірте обрані дані або доступність API.')
       setComparisonResult(null)
@@ -877,6 +896,21 @@ export function ComparisonPage() {
                       ))}
                     </tr>
                   </thead>
+                  {/* Photos row */}
+                  <tbody>
+                    <tr>
+                      <th className="comparison-parameter-name">Фото</th>
+                      {comparisonResult.trims.map((trim, trimIndex) => (
+                        <td key={`photo-${trim.id}-${trimIndex}`} className="comparison-photo-cell">
+                          {comparisonPhotos[trimIndex] ? (
+                            <img src={comparisonPhotos[trimIndex]} alt={formatTrimTitle(trim)} className="comparison-photo-img" />
+                          ) : (
+                            <div className="comparison-photo-placeholder">Фото</div>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
                   <tbody>
                     {comparisonParameters.map((parameter) => (
                       <tr key={parameter.key}>

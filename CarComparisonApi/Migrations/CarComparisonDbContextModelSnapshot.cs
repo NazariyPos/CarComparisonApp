@@ -257,18 +257,11 @@ namespace CarComparisonApi.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("DoorsCount")
-                        .HasColumnType("int");
-
                     b.Property<string>("FuelType")
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("GenerationId")
                         .HasColumnType("int");
-
-                    b.Property<string>("GenerationName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("GenerationVariantId")
                         .HasColumnType("int");

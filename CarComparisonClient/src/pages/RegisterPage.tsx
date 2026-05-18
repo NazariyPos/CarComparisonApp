@@ -77,10 +77,7 @@ export function RegisterPage() {
         <section className="auth-card" aria-labelledby="register-title">
           <p className="auth-eyebrow">Реєстрація</p>
           <h1 id="register-title">Створити акаунт</h1>
-          <p className="auth-description">
-            Після реєстрації ти автоматично увійдеш в систему та побачиш свій логін у
-            хедері.
-          </p>
+          
 
           <form className="auth-form" onSubmit={handleSubmit}>
             <label className="auth-field">

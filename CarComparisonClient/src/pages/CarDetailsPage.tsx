@@ -1,16 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom'
 import { SiteFooter } from '../components/SiteFooter'
 import { SiteHeader } from '../components/SiteHeader'
+import { useAuth } from '../context/AuthContext'
 import {
   getGenerationVariantWithTrims,
   getGenerationWithTrims,
   getReviewsByTrim,
   getTrimFullDetails,
+  getFavorites,
+  addFavorite,
+  deleteReview,
   type GenerationWithTrimsDto,
   type ReviewWithDetailsDto,
   type TrimFullDetailsDto,
 } from '../services/carApi.ts'
+import { ReviewModal } from '../components/ReviewModal'
+import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal'
 
 interface TrimTableRow {
   id: number
@@ -20,9 +26,11 @@ interface TrimTableRow {
   power?: number
   driveType?: string
 }
-
 interface OwnerReviewView {
   key: string
+  id: number
+  userId: number
+  trimId: number
   rating: number
   content: string
   username: string
@@ -135,6 +143,9 @@ const normalizeReviews = (
       seenKeys.add(dedupeKey)
       result.push({
         key: dedupeKey,
+        id: reviewId,
+        userId: item.review.userId,
+        trimId: item.review.trimId,
         rating: item.review.rating,
         content: item.review.content,
         username: item.username || 'Невідомий',
@@ -160,12 +171,24 @@ export function CarDetailsPage() {
   const { generationId, generationVariantId } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const { currentUser } = useAuth()
+
+  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set())
+  const [addingKeys, setAddingKeys] = useState<string[]>([])
 
   const [pageData, setPageData] = useState<PageData | null>(null)
   const [selectedPhoto, setSelectedPhoto] = useState('')
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [reviewModalState, setReviewModalState] = useState<
+    | { mode: 'create'; defaultTrimId: number | null }
+    | { mode: 'edit'; review: { id: number; userId: number; trimId: number; rating: number; content: string } }
+    | null
+  >(null)
+  const [deleteReviewId, setDeleteReviewId] = useState<number | null>(null)
+  const [isDeletingReview, setIsDeletingReview] = useState(false)
 
   useEffect(() => {
     const parsedGenerationId = Number.parseInt(generationId ?? '', 10)
@@ -295,6 +318,25 @@ export function CarDetailsPage() {
     }
   }, [pageData])
 
+  useEffect(() => {
+    async function loadFavorites() {
+      try {
+        const favorites = await getFavorites()
+        const ids = new Set<number>()
+        favorites.forEach((f) => {
+          if (f.trimId) ids.add(f.trimId)
+          if (f.generationVariantId) ids.add(f.generationVariantId)
+          ids.add(f.generationId)
+        })
+        setFavoriteIds(ids)
+      } catch {
+        setFavoriteIds(new Set())
+      }
+    }
+
+    void loadFavorites()
+  }, [])
+
   const galleryPhotos = useMemo(() => {
     if (!pageData) {
       return []
@@ -405,6 +447,19 @@ export function CarDetailsPage() {
 
   const activeStars = Math.round(ratingData.average)
 
+  const refreshReviews = async () => {
+    if (!pageData) {
+      return
+    }
+
+    const trimIds = pageData.generation.trims.map((trim) => trim.id)
+    const trimNameById = new Map(pageData.generation.trims.map((trim) => [trim.id, trim.name]))
+    const reviewBatches = await Promise.all(trimIds.map((trimId) => getReviewsByTrim(trimId)))
+    const reviews = normalizeReviews(reviewBatches, trimNameById)
+
+    setPageData((prev) => (prev ? { ...prev, reviews } : prev))
+  }
+
   return (
     <div className="catalog-page">
       <div className="top-band" />
@@ -474,6 +529,88 @@ export function CarDetailsPage() {
                   <Link to="/brands" className="car-secondary-link">
                     Назад до пошуку
                   </Link>
+                  {pageData && (
+                    <button
+                      type="button"
+                      className="heart-btn"
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        // If user is not authenticated, redirect to login
+                        // We can't import useAuth here because AuthContext provides it elsewhere; instead rely on addFavorite response or loadFavorites
+                        // Try to pick a trim for the active variant
+                        if (!pageData) return
+
+                        const trimsForVariant = pageData.trims.filter(
+                          (t) => t.generationVariantId === (activeVariant?.id ?? pageData.generation.generationVariantId ?? pageData.generation.id),
+                        )
+
+                        if (trimsForVariant.length === 0) {
+                          alert('Не знайдено комплектацій для додавання в обране')
+                          return
+                        }
+
+                        const trimId = trimsForVariant[0].id
+                        const key = String(trimId)
+                        if (addingKeys.includes(key)) return
+
+                        setAddingKeys((s) => [...s, key])
+                        try {
+                          const ok = await addFavorite(trimId)
+                          if (ok) {
+                            const newFavorites = new Set(favoriteIds)
+                            newFavorites.add(trimId)
+                            setFavoriteIds(newFavorites)
+                          } else {
+                            // likely not authenticated — redirect to login
+                            const returnPath = `${location.pathname}${location.search}${location.hash}`
+                            navigate('/login', { state: { from: returnPath } })
+                          }
+                        } finally {
+                          setAddingKeys((s) => s.filter((k) => k !== key))
+                        }
+                      }}
+                      title="Додати в обране"
+                      aria-label="Додати в обране"
+                    >
+                      {(() => {
+                        const variantKey = Number(activeVariant?.id ?? pageData.generation.generationVariantId ?? pageData.generation.id)
+                        const trimsForVariant = pageData.trims.filter(
+                          (t) => t.generationVariantId === (activeVariant?.id ?? pageData.generation.generationVariantId ?? pageData.generation.id),
+                        )
+                        const isFav =
+                          favoriteIds.has(variantKey) ||
+                          trimsForVariant.some((t) => favoriteIds.has(t.id)) ||
+                          favoriteIds.has(pageData.generation.id)
+
+                        return isFav ? (
+                          <i className="fa-solid fa-heart"></i>
+                        ) : (
+                          <i className="fa-regular fa-heart"></i>
+                        )
+                      })()}
+                    </button>
+                  )}
+                  {pageData && (
+                    <button
+                      type="button"
+                      className="car-primary-action"
+                      onClick={() => {
+                        const token = localStorage.getItem('accessToken')
+                        const returnPath = `${location.pathname}${location.search}${location.hash}`
+                        if (!token) {
+                          navigate('/login', { state: { from: returnPath } })
+                          return
+                        }
+
+                        setReviewModalState({
+                          mode: 'create',
+                          defaultTrimId: pageData.trims[0]?.id ?? null,
+                        })
+                      }}
+                    >
+                      Написати відгук
+                    </button>
+                  )}
                 </div>
               </aside>
             </section>
@@ -577,6 +714,39 @@ export function CarDetailsPage() {
                         <span>{review.rating}/10</span>
                       </div>
                       <p>{review.content || 'Без тексту відгуку'}</p>
+                      {currentUser?.id === review.userId && (
+                        <div className="owner-review-actions">
+                          <button
+                            type="button"
+                            className="owner-review-edit-btn"
+                            aria-label="Редагувати відгук"
+                            title="Редагувати відгук"
+                            onClick={() => {
+                              setReviewModalState({
+                                mode: 'edit',
+                                review: {
+                                  id: review.id,
+                                  userId: review.userId,
+                                  trimId: review.trimId,
+                                  rating: review.rating,
+                                  content: review.content,
+                                },
+                              })
+                            }}
+                          >
+                            <i className="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                          </button>
+                          <button
+                            type="button"
+                            className="owner-review-delete-btn"
+                            aria-label="Видалити відгук"
+                            title="Видалити відгук"
+                            onClick={() => setDeleteReviewId(review.id)}
+                          >
+                            <i className="fa-solid fa-trash" aria-hidden="true"></i>
+                          </button>
+                        </div>
+                      )}
                       {review.createdAt && (
                         <small>{formatDate(review.createdAt)}</small>
                       )}
@@ -588,6 +758,62 @@ export function CarDetailsPage() {
           </>
         )}
       </main>
+
+            <ReviewModal
+              isOpen={reviewModalState !== null}
+              onClose={() => setReviewModalState(null)}
+              trims={pageData?.trims?.map((t) => ({ id: t.id, name: t.name })) ?? []}
+              defaultTrimId={reviewModalState?.mode === 'create' ? reviewModalState.defaultTrimId : null}
+              initialReview={
+                reviewModalState?.mode === 'edit'
+                  ? reviewModalState.review
+                  : null
+              }
+              title={reviewModalState?.mode === 'edit' ? 'Редагувати відгук' : 'Написати відгук'}
+              submitLabel={reviewModalState?.mode === 'edit' ? 'Зберегти зміни' : 'Опублікувати'}
+              onSubmitted={async () => {
+                try {
+                  await refreshReviews()
+                } catch {
+                  // ignore
+                }
+              }}
+              onRequireLogin={() => {
+                const returnPath = `${location.pathname}${location.search}${location.hash}`
+                navigate('/login', { state: { from: returnPath } })
+              }}
+            />
+
+            <ConfirmDeleteModal
+              isOpen={deleteReviewId !== null}
+              message="Видалити ваш відгук?"
+              isSubmitting={isDeletingReview}
+              onClose={() => {
+                if (!isDeletingReview) {
+                  setDeleteReviewId(null)
+                }
+              }}
+              onConfirm={async () => {
+                if (!deleteReviewId) {
+                  return
+                }
+
+                setIsDeletingReview(true)
+
+                try {
+                  const ok = await deleteReview(deleteReviewId)
+
+                  if (ok) {
+                    setDeleteReviewId(null)
+                    await refreshReviews()
+                  } else {
+                    alert('Не вдалося видалити відгук.')
+                  }
+                } finally {
+                  setIsDeletingReview(false)
+                }
+              }}
+            />
 
       <SiteFooter />
     </div>

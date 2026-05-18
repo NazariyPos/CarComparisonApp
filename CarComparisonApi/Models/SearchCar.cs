@@ -16,7 +16,6 @@ public class SearchCar
     public string ModelName { get; set; } = string.Empty;
 
     public int GenerationId { get; set; }
-    public string GenerationName { get; set; } = string.Empty;
 
     public string TrimName { get; set; } = string.Empty;
 
@@ -25,7 +24,6 @@ public class SearchCar
     public GenerationVariantType? VariantType { get; set; }
     public int? BodyStyleId { get; set; }
     public string? BodyStyleName { get; set; }
-    public int? DoorsCount { get; set; }
     public string? FuelType { get; set; }
     public string? TransmissionType { get; set; }
 

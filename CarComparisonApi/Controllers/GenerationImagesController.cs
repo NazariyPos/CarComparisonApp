@@ -80,6 +80,46 @@ namespace CarComparisonApi.Controllers
         }
 
         /// <summary>
+        /// Uploads a generation image without explicitly selecting a variant.
+        /// </summary>
+        [HttpPost("~/api/generations/{generationId:int}/images")]
+        [Authorize]
+        [Consumes("multipart/form-data")]
+        [SwaggerOperation(Summary = "Upload generation image without variant")]
+        [ProducesResponseType(typeof(GenerationImageDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UploadImageByGeneration(
+            int generationId,
+            [FromForm] UploadGenerationImageRequest request)
+        {
+            if (generationId <= 0)
+            {
+                return BadRequest("ID має бути додатним числом");
+            }
+
+            if (request.File == null)
+            {
+                return BadRequest("Файл зображення обов'язковий.");
+            }
+
+            try
+            {
+                var created = await _generationImageService.UploadByGenerationAsync(generationId, request.File, request.IsPrimary, request.SortOrder);
+                if (created == null)
+                {
+                    return NotFound("Покоління або його варіант не знайдено");
+                }
+
+                return Created($"/api/generations/{generationId}/images", created);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Sets selected image as primary for the generation variant.
         /// </summary>
         [HttpPut("{imageId:int}/primary")]
