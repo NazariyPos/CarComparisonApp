@@ -14,6 +14,10 @@ import {
   createGenerationVariant,
   createModel,
   createTechnicalDetails,
+  updateBrand,
+  updateModel,
+  updateGenerationVariant,
+  updateTechnicalDetails,
   createTrim,
   deleteBrand,
   deleteGenerationVariant,
@@ -22,6 +26,8 @@ import {
   getBrands,
   getGenerationVariantWithTrims,
   getGenerationVariantsByModel,
+  getTrimFullDetails,
+  getTechnicalDetailsByTrim,
   getAdminBodyStyles,
   getModelsByBrand,
 } from '../services/carApi'
@@ -30,6 +36,7 @@ import {
 const BODY_TYPES = ['Седан', 'Купе', 'Універсал', 'Хетчбек', 'Позашляховик', 'Мінівен', 'Кабріолет'] as const
 const FUEL_TYPES = ['Бензин', 'Дизель', 'Гібрид', 'Електро', 'LPG'] as const
 const DRIVE_TYPES = ['FWD', 'RWD', 'AWD', '4WD'] as const
+const ENGINE_TYPES = ['Рядний', 'V-подібний', 'Опозитний', 'Роторний', 'Електричний', 'W-подібний', 'VR-подібний'] as const
 const VARIANT_TYPES = [
   { value: 'Standard', label: 'Standard' },
   { value: 'PreFacelift', label: 'PreFacelift' },
@@ -106,6 +113,14 @@ export function AdminCatalogPage() {
 
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [editingBrand, setEditingBrand] = useState(false)
+  const [editingBrandName, setEditingBrandName] = useState('')
+  const [editingModel, setEditingModel] = useState(false)
+  const [editingModelName, setEditingModelName] = useState('')
+  const [editingModelBodyType, setEditingModelBodyType] = useState('')
+  const [editingVariant, setEditingVariant] = useState(false)
+  const [editingVariantIsDefault, setEditingVariantIsDefault] = useState(false)
+  const [editingTechnicalId, setEditingTechnicalId] = useState<number | null>(null)
   const [isLoadingLookups, setIsLoadingLookups] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'brand' | 'model' | 'variant' | 'trim'; id: number; name: string } | null>(null)
@@ -270,17 +285,6 @@ export function AdminCatalogPage() {
     if (!generationDetails) return []
     return generationDetails.trims
   }, [generationDetails])
-  const selectedTrim = useMemo(
-    () => selectedTrims.find((item) => String(item.id) === trimId) ?? null,
-    [selectedTrims, trimId],
-  )
-
-  const activePathLabel = useMemo(
-    () => [selectedBrand?.name, selectedModel?.name, selectedVariant?.name]
-      .filter(Boolean)
-      .join(' / '),
-    [selectedBrand?.name, selectedModel?.name, selectedVariant?.name],
-  )
 
   const resetModelScope = () => {
     setModelId('')
@@ -443,7 +447,7 @@ export function AdminCatalogPage() {
       return
     }
 
-    const created = await createTechnicalDetails(Number.parseInt(trimId, 10), {
+    const payload = {
       maxSpeed: maxSpeed ? Number.parseInt(maxSpeed, 10) : undefined,
       acceleration0To100: acceleration0To100 ? Number.parseFloat(acceleration0To100) : undefined,
       engineCode: engineCode || undefined,
@@ -476,7 +480,14 @@ export function AdminCatalogPage() {
       rearBrakes: rearBrakes || undefined,
       frontSuspension: frontSuspension || undefined,
       rearSuspension: rearSuspension || undefined,
-    })
+    }
+
+    let created
+    if (editingTechnicalId) {
+      created = await updateTechnicalDetails(editingTechnicalId, payload)
+    } else {
+      created = await createTechnicalDetails(Number.parseInt(trimId, 10), payload)
+    }
 
     if (!created) {
       setError('Не вдалося додати або оновити технічні характеристики')
@@ -677,19 +688,6 @@ export function AdminCatalogPage() {
         </section>
 
         <section className="admin-panel">
-          <h2>Поточний вибір</h2>
-          <p className="muted-note">
-            {activePathLabel || 'Оберіть існуючу марку, модель, покоління або комплектацію.'}
-          </p>
-          {selectedVariant && selectedTrim ? (
-            <div className="admin-selection-summary">
-              <strong>{selectedVariant.name}</strong>
-              <span>{selectedTrim.name}</span>
-            </div>
-          ) : null}
-        </section>
-
-        <section className="admin-panel">
           <h2>Додати марку</h2>
           <form onSubmit={handleCreateBrand} className="admin-form-stack">
             <label className="admin-field">
@@ -698,6 +696,43 @@ export function AdminCatalogPage() {
             </label>
             <button type="submit" className="primary-cta">Додати марку</button>
           </form>
+          {brandId && selectedBrand ? (
+            <div className="admin-form-stack">
+              <h3>Редагувати обрану марку</h3>
+              {!editingBrand ? (
+                <div>
+                  <p className="muted-note">Поточна: <strong>{selectedBrand.name}</strong></p>
+                  <button type="button" className="primary-cta" onClick={() => { setEditingBrand(true); setEditingBrandName(selectedBrand.name); }}>Редагувати марку</button>
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    setMessage(null)
+                    setError(null)
+                    const updated = await updateBrand(Number.parseInt(brandId, 10), editingBrandName)
+                    if (!updated) {
+                      setError('Не вдалося оновити марку')
+                      return
+                    }
+                    setBrands((cur) => cur.map((b) => (b.id === updated.id ? updated : b)))
+                    setEditingBrand(false)
+                    setMessage(`Марку оновлено: ${updated.name}`)
+                  }}
+                  className="admin-form-stack"
+                >
+                  <label className="admin-field">
+                    <span>Нова назва марки</span>
+                    <input value={editingBrandName} onChange={(ev) => setEditingBrandName(ev.target.value)} />
+                  </label>
+                  <div className="admin-action-buttons">
+                    <button type="submit" className="primary-cta">Зберегти</button>
+                    <button type="button" className="admin-secondary-button" onClick={() => setEditingBrand(false)}>Скасувати</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : null}
         </section>
 
         <section className="admin-panel">
@@ -733,6 +768,52 @@ export function AdminCatalogPage() {
             </label>
             <button type="submit" className="primary-cta" disabled={!brandId}>Додати модель</button>
           </form>
+          {modelId && selectedModel ? (
+            <div className="admin-form-stack">
+              <h3>Редагувати обрану модель</h3>
+              {!editingModel ? (
+                <div>
+                  <p className="muted-note">Поточна: <strong>{selectedModel.name}</strong> ({selectedModel.bodyType || '—'})</p>
+                  <button type="button" className="primary-cta" onClick={() => { setEditingModel(true); setEditingModelName(selectedModel.name); setEditingModelBodyType(selectedModel.bodyType ?? ''); }}>Редагувати модель</button>
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    setMessage(null)
+                    setError(null)
+                    const updated = await updateModel(Number.parseInt(modelId, 10), { name: editingModelName, bodyType: editingModelBodyType || undefined })
+                    if (!updated) {
+                      setError('Не вдалося оновити модель')
+                      return
+                    }
+                    setModels((cur) => cur.map((m) => (m.id === updated.id ? { ...m, name: updated.name, bodyType: editingModelBodyType } : m)))
+                    setEditingModel(false)
+                    setMessage(`Модель оновлено: ${updated.name}`)
+                  }}
+                  className="admin-form-stack"
+                >
+                  <label className="admin-field">
+                    <span>Нова назва моделі</span>
+                    <input value={editingModelName} onChange={(ev) => setEditingModelName(ev.target.value)} />
+                  </label>
+                  <label className="admin-field">
+                    <span>Тип кузова</span>
+                    <select value={editingModelBodyType} onChange={(ev) => setEditingModelBodyType(ev.target.value)}>
+                      <option value="">Оберіть тип кузова</option>
+                      {BODY_TYPES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="admin-action-buttons">
+                    <button type="submit" className="primary-cta">Зберегти</button>
+                    <button type="button" className="admin-secondary-button" onClick={() => setEditingModel(false)}>Скасувати</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : null}
         </section>
 
         <section className="admin-panel">
@@ -761,7 +842,7 @@ export function AdminCatalogPage() {
               <input value={variantName} onChange={(event) => setVariantName(event.target.value)} />
             </label>
             <label className="admin-field">
-              <span>Фаза варіанту</span>
+              <span>Версія моделі (Standart/PreFacelift/Facelift)</span>
               <select
                 value={variantType}
                 onChange={(event) => {
@@ -790,6 +871,80 @@ export function AdminCatalogPage() {
             <label className="admin-field"><span>Рік до</span><input type="number" value={variantYearTo} onChange={(event) => setVariantYearTo(event.target.value)} /></label>
             <button type="submit" className="primary-cta" disabled={!modelId || bodyStyles.length === 0}>Додати варіант</button>
           </form>
+          {variantId && selectedVariant ? (
+            <div className="admin-form-stack">
+              <h3>Редагувати обраний варіант</h3>
+              {!editingVariant ? (
+                <div>
+                  <p className="muted-note">Поточний: <strong>{selectedVariant.name}</strong> ({selectedVariant.yearFrom}-{selectedVariant.yearTo})</p>
+                  <button type="button" className="primary-cta" onClick={() => {
+                    setEditingVariant(true)
+                    setVariantName(selectedVariant.name)
+                    setVariantType(selectedVariant.variantType || 'Standard')
+                    setVariantBodyStyleId(String(selectedVariant.bodyStyleId || ''))
+                    setVariantDoorsCount(String(selectedVariant.doorsCount || ''))
+                    setVariantYearFrom(String(selectedVariant.yearFrom || ''))
+                    setVariantYearTo(String(selectedVariant.yearTo || ''))
+                    setEditingVariantIsDefault(selectedVariant.isDefault)
+                  }}>Редагувати варіант</button>
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    setMessage(null)
+                    setError(null)
+                    const bodyStyleId = Number.parseInt(variantBodyStyleId || '0', 10)
+                    const payload = {
+                      name: normalizeVariantName(variantName, variantType),
+                      variantType,
+                      bodyStyleId: Number.isFinite(bodyStyleId) && bodyStyleId > 0 ? bodyStyleId : undefined,
+                      doorsCount: Number.parseInt(variantDoorsCount || '0', 10),
+                      yearFrom: Number.parseInt(variantYearFrom || '0', 10),
+                      yearTo: Number.parseInt(variantYearTo || '0', 10),
+                      isDefault: editingVariantIsDefault,
+                    }
+                    const updated = await updateGenerationVariant(Number.parseInt(variantId, 10), payload)
+                    if (!updated) {
+                      setError('Не вдалося оновити варіант')
+                      return
+                    }
+                    setGenerationVariants((cur) => cur.map((v) => (v.id === updated.id ? { ...v, name: updated.name, variantType: payload.variantType, bodyStyleId: payload.bodyStyleId ?? v.bodyStyleId, doorsCount: payload.doorsCount, yearFrom: payload.yearFrom, yearTo: payload.yearTo, isDefault: payload.isDefault } : v)))
+                    setEditingVariant(false)
+                    setMessage(`Варіант оновлено: ${updated.name}`)
+                  }}
+                  className="admin-form-stack"
+                >
+                  <label className="admin-field"><span>Назва варіанта</span><input value={variantName} onChange={(event) => setVariantName(event.target.value)} /></label>
+                  <label className="admin-field">
+                    <span>Фаза варіанту</span>
+                    <select value={variantType} onChange={(event) => { setVariantType(event.target.value); setVariantName((currentName) => normalizeVariantName(currentName, event.target.value)); }}>
+                      {VARIANT_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>{type.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="admin-field">
+                    <span>Оберіть кузов</span>
+                    <select value={variantBodyStyleId} onChange={(event) => setVariantBodyStyleId(event.target.value)} disabled={bodyStyles.length === 0}>
+                      <option value="">Оберіть кузов</option>
+                      {bodyStyles.map((style) => (
+                        <option key={style.id} value={style.id}>{style.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="admin-field"><span>Двері</span><input type="number" value={variantDoorsCount} onChange={(event) => setVariantDoorsCount(event.target.value)} /></label>
+                  <label className="admin-field"><span>Рік від</span><input type="number" value={variantYearFrom} onChange={(event) => setVariantYearFrom(event.target.value)} /></label>
+                  <label className="admin-field"><span>Рік до</span><input type="number" value={variantYearTo} onChange={(event) => setVariantYearTo(event.target.value)} /></label>
+                  <label className="admin-field"><span>Is default</span><input type="checkbox" checked={editingVariantIsDefault} onChange={(e) => setEditingVariantIsDefault(e.target.checked)} /></label>
+                  <div className="admin-action-buttons">
+                    <button type="submit" className="primary-cta">Зберегти</button>
+                    <button type="button" className="admin-secondary-button" onClick={() => setEditingVariant(false)}>Скасувати</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : null}
         </section>
 
         <section className="admin-panel">
@@ -847,7 +1002,60 @@ export function AdminCatalogPage() {
 
           <div className={`admin-expander-panel ${showTechnicalForm ? 'admin-expander-panel-open' : ''}`}>
             <div className="admin-expander-panel-inner" id="technical-details-form">
-              <form onSubmit={handleCreateTechnical} className="admin-form-stack">
+                <form onSubmit={handleCreateTechnical} className="admin-form-stack">
+                  {trimId ? (
+                    <div className="admin-form-stack">
+                      <button type="button" className="primary-cta" onClick={async () => {
+                        setMessage(null)
+                        setError(null)
+                        if (!trimId) return
+                          const idOnly = await getTechnicalDetailsByTrim(Number.parseInt(trimId, 10))
+                          const full = await getTrimFullDetails(Number.parseInt(trimId, 10))
+                          const tech = full?.technicalDetails ?? null
+                          if (!tech) {
+                            setMessage('Технічні характеристики не знайдені — форма готова для створення нового запису')
+                            setEditingTechnicalId(null)
+                            return
+                          }
+                          setEditingTechnicalId(idOnly?.id ?? null)
+                          // populate fields
+                          setMaxSpeed(tech.maxSpeed?.toString() ?? '')
+                          setAcceleration0To100(tech.acceleration0To100?.toString() ?? '')
+                          setEngineCode(tech.engineCode ?? '')
+                          setEngineType(tech.engineType ?? '')
+                          setCylindersCount(tech.cylindersCount?.toString() ?? '')
+                          setValvesCount(tech.valvesCount?.toString() ?? '')
+                          setCompressionRatio(tech.compressionRatio?.toString() ?? '')
+                          setFuelType(tech.fuelType && FUEL_TYPES.includes(tech.fuelType as (typeof FUEL_TYPES)[number]) ? tech.fuelType : '')
+                          setPower(tech.power?.toString() ?? '')
+                          setTorque(tech.torque?.toString() ?? '')
+                          setMaxPowerAtRPM(tech.maxPowerAtRPM?.toString() ?? '')
+                          setMaxTorqueAtRPM(tech.maxTorqueAtRPM?.toString() ?? '')
+                          setEngineDisplacement(tech.engineDisplacement?.toString() ?? '')
+                          setDriveType(tech.driveType && DRIVE_TYPES.includes(tech.driveType as (typeof DRIVE_TYPES)[number]) ? tech.driveType : '')
+                          setFuelConsumptionCity(tech.fuelConsumptionCity?.toString() ?? '')
+                          setFuelConsumptionMixed(tech.fuelConsumptionMixed?.toString() ?? '')
+                          setFuelConsumptionHighway(tech.fuelConsumptionHighway?.toString() ?? '')
+                          setElectricRange(tech.electricRange?.toString() ?? '')
+                          setLength(tech.length?.toString() ?? '')
+                          setWidth(tech.width?.toString() ?? '')
+                          setHeight(tech.height?.toString() ?? '')
+                          setWheelbase(tech.wheelbase?.toString() ?? '')
+                          setFrontTrack(tech.frontTrack?.toString() ?? '')
+                          setRearTrack(tech.rearTrack?.toString() ?? '')
+                          setCurbWeight(tech.curbWeight?.toString() ?? '')
+                          setGrossWeight(tech.grossWeight?.toString() ?? '')
+                          setFuelTankCapacity(tech.fuelTankCapacity?.toString() ?? '')
+                          setTurningCircle(tech.turningCircle?.toString() ?? '')
+                          setFrontBrakes(tech.frontBrakes ?? '')
+                          setRearBrakes(tech.rearBrakes ?? '')
+                          setFrontSuspension(tech.frontSuspension ?? '')
+                          setRearSuspension(tech.rearSuspension ?? '')
+                          setShowTechnicalForm(true)
+                          setMessage('Технічні характеристики завантажено для редагування')
+                      }}>Завантажити існуючі технічні характеристики</button>
+                    </div>
+                  ) : null}
                 <div className="admin-form-grid">
                   <label className="admin-field">
                     <span>Оберіть марку</span>
@@ -894,7 +1102,15 @@ export function AdminCatalogPage() {
                   <label className="admin-field"><span>Максимальна швидкість</span><input type="number" value={maxSpeed} onChange={(event) => setMaxSpeed(event.target.value)} /></label>
                   <label className="admin-field"><span>Розгін 0-100</span><input type="number" step="0.1" value={acceleration0To100} onChange={(event) => setAcceleration0To100(event.target.value)} /></label>
                   <label className="admin-field"><span>Код двигуна</span><input value={engineCode} onChange={(event) => setEngineCode(event.target.value)} /></label>
-                  <label className="admin-field"><span>Тип двигуна</span><input value={engineType} onChange={(event) => setEngineType(event.target.value)} /></label>
+                  <label className="admin-field">
+                    <span>Тип двигуна</span>
+                    <select value={engineType} onChange={(event) => setEngineType(event.target.value)}>
+                      <option value="">Оберіть тип двигуна</option>
+                      {ENGINE_TYPES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </label>
                   <label className="admin-field"><span>Кількість циліндрів</span><input type="number" value={cylindersCount} onChange={(event) => setCylindersCount(event.target.value)} /></label>
                   <label className="admin-field"><span>Кількість клапанів</span><input type="number" value={valvesCount} onChange={(event) => setValvesCount(event.target.value)} /></label>
                   <label className="admin-field"><span>Ступінь стиснення</span><input type="number" step="0.1" value={compressionRatio} onChange={(event) => setCompressionRatio(event.target.value)} /></label>
@@ -963,18 +1179,6 @@ export function AdminCatalogPage() {
               </form>
             </div>
           </div>
-        </section>
-
-        <section className="admin-panel">
-          <h2>Наявний вибір у каталозі</h2>
-          <p className="muted-note">{activePathLabel || 'Оберіть марку, модель, покоління або комплектацію.'}</p>
-          {generationDetails ? (
-            <div className="admin-selection-summary">
-              <strong>{generationDetails.brand.name}</strong>
-              <span>{generationDetails.model.name}</span>
-              <span>{generationDetails.displayName}</span>
-            </div>
-          ) : null}
         </section>
 
         <section className="admin-panel">

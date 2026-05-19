@@ -48,6 +48,7 @@
 .home-header {
   padding-top: 16px;
   padding-bottom: 8px;
+  z-index: 1999;
 }
 
 .home-nav {
@@ -158,6 +159,7 @@
   transform: translateY(-4px);
   pointer-events: none;
   transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 1000;
 }
 
 .home-account-menu::before {
@@ -519,7 +521,7 @@ button:disabled {
 
 .site-header {
   position: relative;
-  z-index: 2;
+  z-index: 1999;
   padding: 12px 28px;
 }
 
@@ -619,6 +621,7 @@ button:disabled {
   pointer-events: none;
   transform: translateY(-4px);
   transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 1000;
 }
 
 .site-account-menu::before {

@@ -39,3 +39,25 @@ roslynator-report*.txt
 
 *.DotSettings.user
 *.slnLaunch.user
+
+# Frontend client (CarComparisonClient)
+CarComparisonClient/node_modules/
+CarComparisonClient/dist/
+CarComparisonClient/dist-ssr/
+CarComparisonClient/.vite/
+CarComparisonClient/.cache/
+CarComparisonClient/*.tsbuildinfo
+CarComparisonClient/package-lock.json
+CarComparisonClient/yarn.lock
+CarComparisonClient/pnpm-lock.yaml
+CarComparisonClient/.env.local
+CarComparisonClient/.env.*.local
+CarComparisonClient/.parcel-cache/
+CarComparisonClient/.next/
+CarComparisonClient/.vercel/
+CarComparisonClient/.serverless/
+
+# Common lock and package manager files at repo root
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

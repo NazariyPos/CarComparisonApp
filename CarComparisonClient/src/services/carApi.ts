@@ -1097,6 +1097,82 @@ export async function createTechnicalDetails(trimId: number, payload: {
   }
 }
 
+export async function updateBrand(id: number, name: string): Promise<{ id: number; name: string } | null> {
+  try {
+    const { data } = await apiClient.put(`/admin/brands/${id}`, { name })
+    return data as { id: number; name: string }
+  } catch {
+    return null
+  }
+}
+
+export async function updateModel(id: number, payload: { name: string; bodyType?: string }): Promise<{ id: number; name: string; brandId: number } | null> {
+  try {
+    const { data } = await apiClient.put(`/admin/models/${id}`, payload)
+    return data as { id: number; name: string; brandId: number }
+  } catch {
+    return null
+  }
+}
+
+export async function updateGenerationVariant(id: number, payload: { name: string; variantType: string; bodyStyleId?: number; doorsCount: number; yearFrom: number; yearTo: number; isDefault: boolean; photoUrl?: string }): Promise<{ id: number; name: string; modelId: number } | null> {
+  try {
+    const { data } = await apiClient.put(`/admin/variants/${id}`, payload)
+    return data as { id: number; name: string; modelId: number }
+  } catch (error: unknown) {
+    if (isAxiosError(error) && error.response?.status === 409) {
+      return {
+        id: 0,
+        name: '',
+        modelId: 0,
+      }
+    }
+    return null
+  }
+}
+
+export async function updateTechnicalDetails(technicalDetailsId: number, payload: { 
+  maxSpeed?: number
+  acceleration0To100?: number
+  engineCode?: string
+  engineType?: string
+  cylindersCount?: number
+  valvesCount?: number
+  compressionRatio?: number
+  fuelType?: string
+  power?: number
+  torque?: number
+  maxPowerAtRPM?: number
+  maxTorqueAtRPM?: number
+  engineDisplacement?: number
+  driveType?: string
+  fuelConsumptionCity?: number
+  fuelConsumptionMixed?: number
+  fuelConsumptionHighway?: number
+  electricRange?: number
+  length?: number
+  width?: number
+  height?: number
+  wheelbase?: number
+  frontTrack?: number
+  rearTrack?: number
+  curbWeight?: number
+  grossWeight?: number
+  fuelTankCapacity?: number
+  turningCircle?: number
+  frontBrakes?: string
+  rearBrakes?: string
+  frontSuspension?: string
+  rearSuspension?: string
+}): Promise<{ id: number; trimId: number } | null> {
+  try {
+    const { data } = await apiClient.put(`/admin/technical-details/${technicalDetailsId}`, payload)
+    return data as { id: number; trimId: number }
+  } catch {
+    return null
+  }
+}
+
 export async function deleteBrand(id: number): Promise<boolean> {
   try {
     await apiClient.delete(`/admin/brands/${id}`)

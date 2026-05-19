@@ -47,6 +47,11 @@ const formatDate = (value: string): string => {
   return new Date(timestamp).toLocaleString('uk-UA')
 }
 
+type GalleryImageRecord = GenerationImageDto & {
+  variantId: number
+  variantName: string
+}
+
 export function AdminPhotoUploadPage() {
   const { currentUser, isAuthenticated, isAuthReady } = useAuth()
   const navigate = useNavigate()
@@ -56,7 +61,7 @@ export function AdminPhotoUploadPage() {
   const [models, setModels] = useState<ModelDto[]>([])
   const [generations, setGenerations] = useState<GenerationDto[]>([])
   const [variants, setVariants] = useState<GenerationVariantDto[]>([])
-  const [images, setImages] = useState<GenerationImageDto[]>([])
+  const [images, setImages] = useState<GalleryImageRecord[]>([])
 
   const [brandId, setBrandId] = useState('')
   const [modelId, setModelId] = useState('')
@@ -101,17 +106,49 @@ export function AdminPhotoUploadPage() {
     [generations, generationId],
   )
 
+  const selectedGenerationVariantIds = useMemo(
+    () => new Set((selectedGeneration?.variants ?? []).map((item) => item.id)),
+    [selectedGeneration],
+  )
+
   const selectedVariant = useMemo(() => {
     if (variantId) {
       return variants.find((item) => String(item.id) === variantId) ?? null
     }
 
-    if (selectedGeneration) {
-      return variants.find((item) => item.generationId === selectedGeneration.id) ?? null
+    if (selectedGenerationVariantIds.size > 0) {
+      return variants.find((item) => selectedGenerationVariantIds.has(item.id)) ?? null
     }
 
     return null
-  }, [selectedGeneration, variantId, variants])
+  }, [selectedGenerationVariantIds, variantId, variants])
+
+  const selectedGalleryModelId = selectedGeneration?.modelId ?? selectedModel?.id ?? null
+  const selectedGenerationVariants = useMemo(
+    () => (selectedGeneration
+      ? variants.filter((item) => selectedGenerationVariantIds.has(item.id))
+      : []),
+    [selectedGeneration, selectedGenerationVariantIds, variants],
+  )
+
+  const findVariantById = (id: number): GenerationVariantDto | null => {
+    return variants.find((item) => item.id === id) ?? null
+  }
+
+  const loadGalleryImages = async (generationVariants: GenerationVariantDto[], modelId: number) => {
+    const responses = await Promise.all(
+      generationVariants.map(async (variant) => {
+        const variantImages = await getGenerationVariantImages(modelId, variant.id)
+        return variantImages.map((image) => ({
+          ...image,
+          variantId: variant.id,
+          variantName: variant.name,
+        }))
+      }),
+    )
+
+    return responses.flat()
+  }
 
   useEffect(() => {
     async function loadBrands() {
@@ -191,28 +228,23 @@ export function AdminPhotoUploadPage() {
   }, [generationId, generations])
 
   useEffect(() => {
-    if (!variantId) {
+    const galleryModelId = selectedGalleryModelId
+
+    if (!selectedGeneration || galleryModelId == null) {
       setImages([])
       return
     }
 
-    const selected = variants.find((item) => String(item.id) === variantId)
-    if (!selected) {
+    if (selectedGenerationVariants.length === 0) {
       setImages([])
       return
     }
 
-    if (generationId && String(selected.generationId) !== generationId) {
-      setVariantId('')
-      setImages([])
-      return
-    }
-
-    const activeVariant = selected
+    const resolvedGalleryModelId: number = galleryModelId
 
     async function loadImages() {
       try {
-        const data = await getGenerationVariantImages(activeVariant.generationId, activeVariant.id)
+        const data = await loadGalleryImages(selectedGenerationVariants, resolvedGalleryModelId)
         setImages(data)
       } catch {
         setImages([])
@@ -220,7 +252,7 @@ export function AdminPhotoUploadPage() {
     }
 
     void loadImages()
-  }, [generationId, variantId, variants])
+  }, [selectedGalleryModelId, selectedGeneration, selectedGenerationVariants])
 
   const handleUpload = async () => {
     if (!selectedFile) {
@@ -234,6 +266,14 @@ export function AdminPhotoUploadPage() {
     }
 
     const parsedSortOrder = sortOrder.trim() ? Number.parseInt(sortOrder, 10) : undefined
+    const galleryModelId = selectedGalleryModelId
+
+    if (galleryModelId == null) {
+      setError('Не вдалося визначити модель для фото.')
+      return
+    }
+
+    const resolvedGalleryModelId: number = galleryModelId
 
     setIsUploading(true)
     setError(null)
@@ -242,7 +282,7 @@ export function AdminPhotoUploadPage() {
     try {
       const created = selectedVariant
         ? await uploadGenerationVariantImage(
-          selectedVariant.generationId,
+          resolvedGalleryModelId,
           selectedVariant.id,
           selectedFile,
           isPrimary,
@@ -273,10 +313,7 @@ export function AdminPhotoUploadPage() {
 
       setVariantId(String(activeVariant.id))
 
-      const refreshedImages = await getGenerationVariantImages(
-        activeVariant.generationId,
-        activeVariant.id,
-      )
+        const refreshedImages = await loadGalleryImages(selectedGenerationVariants, resolvedGalleryModelId)
 
       setImages(refreshedImages)
       setSelectedFile(null)
@@ -290,13 +327,23 @@ export function AdminPhotoUploadPage() {
   }
 
   const handleSetPrimary = async (imageId: number) => {
-    if (!selectedVariant) {
+    if (!selectedGalleryModelId) {
+      return
+    }
+
+    const image = images.find((item) => item.id === imageId)
+    if (!image) {
+      return
+    }
+
+    const imageVariant = findVariantById(image.variantId)
+    if (!imageVariant) {
       return
     }
 
     const updated = await setGenerationVariantImagePrimary(
-      selectedVariant.generationId,
-      selectedVariant.id,
+      selectedGalleryModelId,
+      imageVariant.id,
       imageId,
     )
 
@@ -306,22 +353,39 @@ export function AdminPhotoUploadPage() {
     }
 
     const refreshedImages = await getGenerationVariantImages(
-      selectedVariant.generationId,
-      selectedVariant.id,
+      selectedGalleryModelId,
+      imageVariant.id,
     )
 
-    setImages(refreshedImages)
+    setImages((current) => [
+      ...current.filter((item) => item.variantId !== imageVariant.id),
+      ...refreshedImages.map((item) => ({
+        ...item,
+        variantId: imageVariant.id,
+        variantName: imageVariant.name,
+      })),
+    ])
     setMessage('Головне фото оновлено.')
   }
 
   const handleDeleteImage = async (imageId: number) => {
-    if (!selectedVariant) {
+    if (!selectedGalleryModelId) {
+      return
+    }
+
+    const image = images.find((item) => item.id === imageId)
+    if (!image) {
+      return
+    }
+
+    const imageVariant = findVariantById(image.variantId)
+    if (!imageVariant) {
       return
     }
 
     const deleted = await deleteGenerationVariantImage(
-      selectedVariant.generationId,
-      selectedVariant.id,
+      selectedGalleryModelId,
+      imageVariant.id,
       imageId,
     )
 
@@ -331,11 +395,18 @@ export function AdminPhotoUploadPage() {
     }
 
     const refreshedImages = await getGenerationVariantImages(
-      selectedVariant.generationId,
-      selectedVariant.id,
+      selectedGalleryModelId,
+      imageVariant.id,
     )
 
-    setImages(refreshedImages)
+    setImages((current) => [
+      ...current.filter((item) => item.variantId !== imageVariant.id),
+      ...refreshedImages.map((item) => ({
+        ...item,
+        variantId: imageVariant.id,
+        variantName: imageVariant.name,
+      })),
+    ])
     setMessage('Фото видалено.')
   }
 
@@ -490,18 +561,19 @@ export function AdminPhotoUploadPage() {
 
         <section className="admin-panel">
           <h2>Поточні фото</h2>
-          {selectedVariant ? (
+          {selectedGeneration ? (
             images.length > 0 ? (
               <ul className="admin-gallery">
                 {images.map((image) => (
                   <li key={image.id} className="admin-gallery-item">
                     <img
                       src={resolveImageUrl(image.url)}
-                      alt={`${selectedVariant.name} ${image.id}`}
+                      alt={`${image.variantName} ${image.id}`}
                       className="admin-gallery-image"
                     />
                     <div className="admin-gallery-meta">
                       <strong>{image.isPrimary ? 'Головне фото' : 'Фото'}</strong>
+                      <span>Модифікація: {image.variantName}</span>
                       <span>Порядок: {image.sortOrder}</span>
                       <span>{formatDate(image.createdAt)}</span>
                     </div>

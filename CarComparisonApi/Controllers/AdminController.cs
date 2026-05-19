@@ -80,6 +80,45 @@ namespace CarComparisonApi.Controllers
             string? RearSuspension
         );
 
+        // Update request records
+        public record UpdateBrandRequest(string Name);
+        public record UpdateModelRequest(string Name, string? BodyType);
+        public record UpdateGenerationRequest(string Name, int YearFrom, int YearTo, string? PhotoUrl, string VariantType, int? BodyStyleId, int DoorsCount, bool IsDefault);
+        public record UpdateTechnicalDetailsRequest(
+            int? MaxSpeed,
+            decimal? Acceleration0To100,
+            string? EngineCode,
+            string? EngineType,
+            int? CylindersCount,
+            int? ValvesCount,
+            decimal? CompressionRatio,
+            string? FuelType,
+            int? Power,
+            int? Torque,
+            int? MaxPowerAtRPM,
+            int? MaxTorqueAtRPM,
+            decimal? EngineDisplacement,
+            string? DriveType,
+            decimal? FuelConsumptionCity,
+            decimal? FuelConsumptionMixed,
+            decimal? FuelConsumptionHighway,
+            decimal? ElectricRange,
+            decimal? Length,
+            decimal? Width,
+            decimal? Height,
+            decimal? Wheelbase,
+            decimal? FrontTrack,
+            decimal? RearTrack,
+            decimal? CurbWeight,
+            decimal? GrossWeight,
+            decimal? FuelTankCapacity,
+            decimal? TurningCircle,
+            string? FrontBrakes,
+            string? RearBrakes,
+            string? FrontSuspension,
+            string? RearSuspension
+        );
+
         // Дозволені значення для контролю якості даних
         private static readonly HashSet<string> AllowedBodyTypes = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -361,6 +400,165 @@ namespace CarComparisonApi.Controllers
             await RefreshSearchProjectionAsync();
 
             return Ok(new { id = details.Id, trimId = trimId });
+        }
+
+        // --- Update endpoints ---
+        [HttpPut("brands/{brandId}")]
+        public async Task<IActionResult> UpdateBrand(int brandId, [FromBody] UpdateBrandRequest req)
+        {
+            if (!await IsCurrentUserAdminAsync()) return Forbid();
+            if (brandId <= 0) return BadRequest("Invalid brandId");
+            if (string.IsNullOrWhiteSpace(req.Name)) return BadRequest("Name is required");
+
+            var brand = await _dbContext.CarBrands.FindAsync(brandId);
+            if (brand == null) return NotFound("Brand not found");
+
+            var normalized = req.Name.Trim();
+            var other = await _dbContext.CarBrands.FirstOrDefaultAsync(b => b.Name == normalized && b.Id != brandId);
+            if (other != null)
+            {
+                return Conflict(new { message = "Another brand with the same name exists", id = other.Id, name = other.Name });
+            }
+
+            brand.Name = normalized;
+            await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
+
+            return Ok(new { id = brand.Id, name = brand.Name });
+        }
+
+        [HttpPut("models/{modelId}")]
+        public async Task<IActionResult> UpdateModel(int modelId, [FromBody] UpdateModelRequest req)
+        {
+            if (!await IsCurrentUserAdminAsync()) return Forbid();
+            if (modelId <= 0) return BadRequest("Invalid modelId");
+            if (string.IsNullOrWhiteSpace(req.Name)) return BadRequest("Name is required");
+
+            var model = await _dbContext.CarModels.Include(m => m.Brand).FirstOrDefaultAsync(m => m.Id == modelId);
+            if (model == null) return NotFound("Model not found");
+
+            if (!string.IsNullOrWhiteSpace(req.BodyType) && !AllowedBodyTypes.Contains(req.BodyType))
+            {
+                return BadRequest($"Invalid body type. Allowed values: {string.Join(", ", AllowedBodyTypes)}");
+            }
+
+            var normalized = req.Name.Trim();
+            var other = await _dbContext.CarModels.FirstOrDefaultAsync(m => m.BrandId == model.BrandId && m.Name == normalized && m.Id != modelId);
+            if (other != null)
+            {
+                return Conflict(new { message = "Another model with the same name exists for this brand", id = other.Id, name = other.Name, brandId = model.BrandId });
+            }
+
+            model.Name = normalized;
+            model.BodyType = req.BodyType?.Trim();
+
+            await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
+
+            return Ok(new { id = model.Id, name = model.Name, brandId = model.BrandId });
+        }
+
+        [HttpPut("variants/{variantId}")]
+        public async Task<IActionResult> UpdateGenerationVariant(int variantId, [FromBody] UpdateGenerationRequest req)
+        {
+            if (!await IsCurrentUserAdminAsync()) return Forbid();
+            if (variantId <= 0) return BadRequest("Invalid variantId");
+            if (string.IsNullOrWhiteSpace(req.Name)) return BadRequest("Name is required");
+
+            var variant = await _dbContext.GenerationVariants.FindAsync(variantId);
+            if (variant == null) return NotFound("Variant not found");
+
+            if (req.BodyStyleId <= 0)
+            {
+                return BadRequest("BodyStyleId must reference an existing body style");
+            }
+
+            if (!Enum.TryParse<GenerationVariantType>(req.VariantType, true, out var variantType))
+            {
+                variantType = GenerationVariantType.Standard;
+            }
+
+            var normalized = req.Name.Trim();
+            var bodyStyleIdToCompare = req.BodyStyleId ?? variant.BodyStyleId;
+            var existing = await _dbContext.GenerationVariants.FirstOrDefaultAsync(v =>
+                v.ModelId == variant.ModelId && v.Name == normalized && v.VariantType == variantType && v.BodyStyleId == bodyStyleIdToCompare && v.DoorsCount == req.DoorsCount && v.Id != variantId);
+
+            if (existing != null)
+            {
+                return Conflict(new { message = "Another variant with same parameters exists for this model", id = existing.Id });
+            }
+
+            variant.Name = normalized;
+            variant.YearFrom = req.YearFrom;
+            variant.YearTo = req.YearTo;
+            variant.PhotoUrl = req.PhotoUrl;
+            variant.VariantType = variantType;
+            variant.BodyStyleId = req.BodyStyleId ?? variant.BodyStyleId;
+            variant.DoorsCount = req.DoorsCount;
+            variant.IsDefault = req.IsDefault;
+
+            await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
+
+            return Ok(new { id = variant.Id, name = variant.Name, modelId = variant.ModelId });
+        }
+
+        [HttpPut("technical-details/{technicalDetailsId}")]
+        public async Task<IActionResult> UpdateTechnicalDetails(int technicalDetailsId, [FromBody] UpdateTechnicalDetailsRequest req)
+        {
+            if (!await IsCurrentUserAdminAsync()) return Forbid();
+            if (technicalDetailsId <= 0) return BadRequest("Invalid technicalDetailsId");
+
+            var details = await _dbContext.TechnicalDetails.FindAsync(technicalDetailsId);
+            if (details == null) return NotFound("Technical details not found");
+
+            if (!string.IsNullOrWhiteSpace(req.FuelType) && !AllowedFuelTypes.Contains(req.FuelType))
+            {
+                return BadRequest($"Invalid fuel type. Allowed values: {string.Join(", ", AllowedFuelTypes)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(req.DriveType) && !AllowedDriveTypes.Contains(req.DriveType))
+            {
+                return BadRequest($"Invalid drive type. Allowed values: {string.Join(", ", AllowedDriveTypes)}");
+            }
+
+            details.MaxSpeed = req.MaxSpeed ?? details.MaxSpeed;
+            details.Acceleration0To100 = req.Acceleration0To100 ?? details.Acceleration0To100;
+            details.EngineCode = req.EngineCode != null ? req.EngineCode.Trim() : details.EngineCode;
+            details.EngineType = req.EngineType != null ? req.EngineType.Trim() : details.EngineType;
+            details.CylindersCount = req.CylindersCount ?? details.CylindersCount;
+            details.ValvesCount = req.ValvesCount ?? details.ValvesCount;
+            details.CompressionRatio = req.CompressionRatio ?? details.CompressionRatio;
+            details.FuelType = req.FuelType != null ? req.FuelType.Trim() : details.FuelType;
+            details.Power = req.Power ?? details.Power;
+            details.Torque = req.Torque ?? details.Torque;
+            details.MaxPowerAtRPM = req.MaxPowerAtRPM ?? details.MaxPowerAtRPM;
+            details.MaxTorqueAtRPM = req.MaxTorqueAtRPM ?? details.MaxTorqueAtRPM;
+            details.EngineDisplacement = req.EngineDisplacement ?? details.EngineDisplacement;
+            details.DriveType = req.DriveType != null ? req.DriveType.Trim() : details.DriveType;
+            details.FuelConsumptionCity = req.FuelConsumptionCity ?? details.FuelConsumptionCity;
+            details.FuelConsumptionMixed = req.FuelConsumptionMixed ?? details.FuelConsumptionMixed;
+            details.FuelConsumptionHighway = req.FuelConsumptionHighway ?? details.FuelConsumptionHighway;
+            details.ElectricRange = req.ElectricRange ?? details.ElectricRange;
+            details.Length = req.Length ?? details.Length;
+            details.Width = req.Width ?? details.Width;
+            details.Height = req.Height ?? details.Height;
+            details.Wheelbase = req.Wheelbase ?? details.Wheelbase;
+            details.FrontTrack = req.FrontTrack ?? details.FrontTrack;
+            details.RearTrack = req.RearTrack ?? details.RearTrack;
+            details.CurbWeight = req.CurbWeight ?? details.CurbWeight;
+            details.GrossWeight = req.GrossWeight ?? details.GrossWeight;
+            details.FuelTankCapacity = req.FuelTankCapacity ?? details.FuelTankCapacity;
+            details.TurningCircle = req.TurningCircle ?? details.TurningCircle;
+            details.FrontBrakes = req.FrontBrakes != null ? req.FrontBrakes.Trim() : details.FrontBrakes;
+            details.RearBrakes = req.RearBrakes != null ? req.RearBrakes.Trim() : details.RearBrakes;
+            details.FrontSuspension = req.FrontSuspension != null ? req.FrontSuspension.Trim() : details.FrontSuspension;
+            details.RearSuspension = req.RearSuspension != null ? req.RearSuspension.Trim() : details.RearSuspension;
+
+            await _dbContext.SaveChangesAsync();
+            await RefreshSearchProjectionAsync();
+
+            return Ok(new { id = details.Id, trimId = details.TrimId });
         }
 
         [HttpDelete("brands/{brandId}")]
